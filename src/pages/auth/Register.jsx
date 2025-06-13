@@ -48,12 +48,15 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     try {
-      await axios.post("https://payungku-backend.vercel.app/auth/register", {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        password: data.password,
-      });
+      await axios.post(
+        "https://payungku-backend.vercel.app/api/auth/register",
+        {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password,
+        }
+      );
 
       toast.success(
         "Registrasi berhasil! Anda akan diarahkan ke halaman login."

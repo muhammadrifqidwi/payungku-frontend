@@ -136,7 +136,7 @@ const DashboardAdmin = () => {
   const handleDeleteLocation = async (id) => {
     if (window.confirm("Yakin ingin menghapus lokasi ini?")) {
       try {
-        await api.delete(`/locations/${id}`);
+        await api.delete(`/location/${id}`);
         // Refresh locations data
         const response = await api.get("/locations");
         setLocations(response.data);
