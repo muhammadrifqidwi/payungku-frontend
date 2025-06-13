@@ -80,7 +80,7 @@ export default function SetPhonePasswordPage() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        "https://backend-payungku.vercel.app/auth/set-password",
+        "https://payungku-backend.vercel.app/auth/set-password",
         data,
         {
           headers: {

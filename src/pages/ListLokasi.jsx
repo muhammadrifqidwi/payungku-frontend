@@ -8,7 +8,7 @@ export default function ListLokasi() {
   const [lokasi, setLokasi] = useState([]);
 
   useEffect(() => {
-    fetch("https://backend-payungku.vercel.app/api/lokasi")
+    fetch("https://payungku-backend.vercel.app/api/lokasi")
       .then((res) => res.json())
       .then((data) => setLokasi(data))
       .catch((err) => console.error(err));

@@ -306,7 +306,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     axios
-      .get("https://backend-payungku.vercel.app/api/locations")
+      .get("https://payungku-backend.vercel.app/api/locations")
       .then((res) => {
         setLocations(res.data);
         setTotalPages(Math.ceil(res.data.length / itemsPerPage));

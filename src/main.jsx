@@ -4,7 +4,7 @@ import App from "./App.jsx";
 import "./index.css";
 import axios from "axios";
 
-axios.defaults.baseURL = "https://backend-payungku.vercel.app/";
+axios.defaults.baseURL = "https://payungku-backend.vercel.app/";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

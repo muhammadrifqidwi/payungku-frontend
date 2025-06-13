@@ -48,7 +48,7 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     try {
-      await axios.post("https://backend-payungku.vercel.app/auth/register", {
+      await axios.post("https://payungku-backend.vercel.app/auth/register", {
         name: data.name,
         email: data.email,
         phone: data.phone,

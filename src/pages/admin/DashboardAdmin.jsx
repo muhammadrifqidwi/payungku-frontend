@@ -116,7 +116,7 @@ const DashboardAdmin = () => {
   const fetchUsers = async () => {
     try {
       const res = await api.get(
-        "https://backend-payungku.vercel.app/api/users",
+        "https://payungku-backend.vercel.app/api/users",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -186,7 +186,7 @@ const DashboardAdmin = () => {
     try {
       const token = localStorage.getItem("token");
       await api.delete(
-        `https://backend-payungku.vercel.app/api/admin/users/${userId}`,
+        `https://payungku-backend.vercel.app/api/admin/users/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
