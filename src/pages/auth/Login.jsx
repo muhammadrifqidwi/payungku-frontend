@@ -226,7 +226,7 @@ const Login = () => {
 
               {/* Google Login */}
               <div className="space-y-4">
-                <GoogleOAuthProvider clientId="220023925897-7rte78t4mevjsfl91i8te2grcahcjsbl.apps.googleusercontent.com">
+                <GoogleOAuthProvider clientId="257154767258-plt1ivj5fash7e6qcek6mlfih9gpbprl.apps.googleusercontent.com">
                   <div className="flex justify-center">
                     <div className="w-full">
                       <GoogleLogin
