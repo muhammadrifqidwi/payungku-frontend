@@ -83,7 +83,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await api.get("/api/users/me", {
+        const res = await api.get("/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
