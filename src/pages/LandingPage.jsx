@@ -306,7 +306,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     axios
-      .get("https://payungku-backend.vercel.app/api/locations")
+      .get("https://backend-psi-blond-70.vercel.app/api/locations")
       .then((res) => {
         setLocations(res.data);
         setTotalPages(Math.ceil(res.data.length / itemsPerPage));
@@ -437,7 +437,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 sm:pt-10">
           <div className="lg:grid lg:grid-cols-12 lg:gap-8">
             <motion.div
-              className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left"
+              className="sm:text-center md:max-w-xl md:mx-auto lg:col-span-6 lg:text-left "
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}

@@ -49,7 +49,7 @@ export default function Register() {
   const onSubmit = async (data) => {
     try {
       await axios.post(
-        "https://payungku-backend.vercel.app/api/auth/register",
+        "https://backend-psi-blond-70.vercel.app/api/auth/register",
         {
           name: data.name,
           email: data.email,

@@ -6,7 +6,7 @@ const getToken = () => {
 };
 
 const api = axios.create({
-  baseURL: "https://payungku-backend.vercel.app/",
+  baseURL: "https://backend-psi-blond-70.vercel.app/",
   withCredentials: true,
 });
 

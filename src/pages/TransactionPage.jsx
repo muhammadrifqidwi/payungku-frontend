@@ -72,7 +72,7 @@ export default function TransactionPage() {
   const fetchTransactions = useCallback(async () => {
     try {
       const res = await axios.get(
-        "https://payungku-backend.vercel.app/api/transactions/user",
+        "https://backend-psi-blond-70.vercel.app/api/transactions/user",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -111,7 +111,7 @@ export default function TransactionPage() {
   const fetchLocations = async () => {
     try {
       const res = await axios.get(
-        "https://payungku-backend.vercel.app/api/locations"
+        "https://backend-psi-blond-70.vercel.app/api/locations"
       );
       setLocations(res.data);
       setFetching(false);
