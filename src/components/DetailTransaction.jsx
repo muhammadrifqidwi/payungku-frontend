@@ -416,7 +416,7 @@ export default function DetailTransaction() {
                 </p>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
                   <QRCode
-                    value={`http://localhost:5173/return/validate/${data.token}`}
+                    value={`https://payungku.vercel.app/return/validate/${data.token}`}
                     size={180}
                   />
                 </div>

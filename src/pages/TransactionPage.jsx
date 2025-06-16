@@ -916,7 +916,7 @@ export default function TransactionPage() {
                         {showQR && activeTransaction?.token && (
                           <div className="p-4 bg-white rounded-lg border-2 border-blue-100 shadow">
                             <QRCode
-                              value={`http://localhost:5173/return/validate/${activeTransaction.token}`}
+                              value={`https://payungku.vercel.app/return/validate/${activeTransaction.token}`}
                               size={180}
                             />
                           </div>
