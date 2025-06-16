@@ -38,7 +38,7 @@ const Login = () => {
   const onSubmit = async (data) => {
     try {
       const res = await axios.post(
-        "https://backend-psi-blond-70.vercel.app/api/auth/login",
+        "https://backend-psi-blond-70.vercel.app/auth/login",
         data,
         {
           withCredentials: true,
@@ -59,7 +59,7 @@ const Login = () => {
   const handleGoogleLogin = async (credentialResponse) => {
     try {
       const res = await axios.post(
-        "https://backend-psi-blond-70.vercel.app/api/auth/google-login",
+        "https://backend-psi-blond-70.vercel.app/auth/google-login",
         {
           token: credentialResponse.credential,
         }
