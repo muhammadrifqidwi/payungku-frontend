@@ -4,12 +4,12 @@ import QRCode from "react-qr-code";
 const ReturnQRCode = ({ token, rentCode }) => {
   useEffect(() => {
     if (token) {
-      const url = `http://localhost:5173/return/validate/${token}`;
+      const url = `https://payungku.vercel.app/return/validate/${token}`;
       console.log("QR URL:", url);
     }
   }, [token]);
 
-  const url = `http://localhost:5173/return/validate/${token}`;
+  const url = `https://payungku.vercel.app/return/validate/${token}`;
 
   return (
     <div className="text-center p-4">
