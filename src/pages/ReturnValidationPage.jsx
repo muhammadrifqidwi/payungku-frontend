@@ -160,7 +160,6 @@ const ReturnValidationPage = () => {
         setError("Terjadi kesalahan saat pembayaran.");
       },
       onClose: () => {
-        // If user closes payment window without completing
         if (status === "late") {
           alert(
             "Silakan selesaikan pembayaran untuk melanjutkan pengembalian."

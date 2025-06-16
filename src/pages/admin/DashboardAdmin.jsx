@@ -8,6 +8,7 @@ import UserDetail from "../../components/admin/UserDetail";
 import LocationDetail from "../../components/admin/LocationDetail";
 import AddLocationForm from "../../components/admin/AddLocation";
 import { toast } from "sonner";
+import axios from "axios";
 import {
   PieChart,
   Pie,
@@ -115,7 +116,7 @@ const DashboardAdmin = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await api.get(
+      const res = await axios.get(
         "https://backend-psi-blond-70.vercel.app/api/users",
         {
           headers: {
