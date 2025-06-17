@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "https://backend-psi-blond-70.vercel.app/api",
-  timeout: 10000,
+  timeout: 90000,
   headers: {
     "Content-Type": "application/json",
   },

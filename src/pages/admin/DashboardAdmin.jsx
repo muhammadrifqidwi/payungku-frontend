@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 import {
   Users,
-  User as UserIcon,
+  UserIcon,
   ShoppingBag,
   Loader,
   AlertCircle,
@@ -43,7 +43,6 @@ import {
   X,
   PlusCircle,
   Eye,
-  Edit,
   Trash2,
 } from "lucide-react";
 
@@ -72,7 +71,6 @@ const DashboardAdmin = () => {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locations, setLocations] = useState([]);
@@ -90,195 +88,252 @@ const DashboardAdmin = () => {
 
   const token = useMemo(() => localStorage.getItem("token"), []);
 
-  // Error handling yang lebih spesifik
-  const handleApiError = useCallback(
-    (err, context) => {
-      console.error(`${context} error:`, err);
-
-      if (err.code === "ECONNABORTED") {
-        setError(
-          `Koneksi timeout. Server membutuhkan waktu terlalu lama untuk merespons. (Percobaan: ${
-            retryCount + 1
-          }/3)`
-        );
-        return;
-      }
-
-      if (err.response?.status === 401) {
-        setError("Sesi Anda telah berakhir. Silakan login kembali.");
-        localStorage.clear();
-        navigate("/login");
-        return;
-      }
-
-      if (err.response?.status === 500) {
-        setError("Server sedang mengalami masalah. Silakan coba lagi nanti.");
-        return;
-      }
-
-      if (err.code === "NETWORK_ERROR" || !err.response) {
-        setError(
-          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
-        );
-        return;
-      }
-
-      setError(err.response?.data?.message || `Gagal ${context.toLowerCase()}`);
-    },
-    [navigate, retryCount]
-  );
-
-  // Fetch data secara terpisah untuk menghindari timeout
-  // const fetchDataSeparately = useCallback(async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     setError("");
-
-  //     const [usersRes, transactionsRes, locationsRes] =
-  //       await Promise.allSettled([
-  //         api.get("/admin/users"), // gunakan default timeout
-  //         api.get("/admin/transactions"),
-  //         api.get("/admin/locations"),
-  //       ]);
-
-  //     const users = usersRes.status === "fulfilled" ? usersRes.value.data : [];
-  //     const transactions =
-  //       transactionsRes.status === "fulfilled"
-  //         ? transactionsRes.value.data
-  //         : [];
-  //     const locations =
-  //       locationsRes.status === "fulfilled" ? locationsRes.value.data : [];
-
-  //     if (usersRes.status === "rejected")
-  //       console.warn("Gagal memuat pengguna:", usersRes.reason);
-  //     if (transactionsRes.status === "rejected")
-  //       console.warn("Gagal memuat transaksi:", transactionsRes.reason);
-  //     if (locationsRes.status === "rejected")
-  //       console.warn("Gagal memuat lokasi:", locationsRes.reason);
-
-  //     setStats({
-  //       totalUsers: users.filter((u) => u.role === "peminjam").length,
-  //       totalAdmins: users.filter((u) => u.role === "admin").length,
-  //       totalTransactions: transactions.length,
-  //     });
-
-  //     setAllUsers(users);
-  //     setAllTransactions(transactions);
-  //     setLocations(locations);
-
-  //     const failedCount = [usersRes, transactionsRes, locationsRes].filter(
-  //       (r) => r.status === "rejected"
-  //     ).length;
-  //     if (failedCount > 0) {
-  //       setError(`${failedCount} dari 3 data gagal dimuat.`);
-  //     } else {
-  //       setError("");
-  //       setRetryCount(0);
-  //     }
-  //   } catch (err) {
-  //     console.error("Dashboard fetch error:", err);
-  //     handleApiError(err, "Memuat dashboard");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }, [handleApiError]);
-
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-
-      const res = await api.get("/admin/dashboard/data");
-
-      const {
-        users = [],
-        transactions = [],
-        locations = [],
-        totalUsers = 0,
-        totalAdmins = 0,
-        totalTransactions = 0,
-      } = res.data;
-
-      setStats({ totalUsers, totalAdmins, totalTransactions });
-      setAllUsers(users);
-      setAllTransactions(transactions);
-      setLocations(locations);
-
-      setRetryCount(0); // Reset retry jika sukses
-    } catch (err) {
-      console.error("Gagal memuat dashboard:", err);
-      setError("Gagal memuat data dashboard.");
-      handleApiError(err, "Memuat dashboard");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [handleApiError]);
-
-  useEffect(() => {
+  // Unified data fetching function
+  const fetchAllData = useCallback(async () => {
     if (!token) {
-      setError("Tidak ada token autentikasi");
+      setError("Token tidak ditemukan. Silakan login kembali.");
       navigate("/login");
       return;
     }
 
-    fetchDashboardData();
-  }, [token, navigate, fetchDashboardData]);
+    try {
+      setIsLoading(true);
+      setError("");
 
-  useEffect(() => {
-    async function fetchDashboard() {
-      try {
-        const res = await api.get("/admin/dashboard/stats");
+      // Fetch all data in parallel with proper error handling
+      const [dashboardRes, usersRes, transactionsRes, locationsRes] =
+        await Promise.allSettled([
+          api.get("/admin/dashboard/data", { timeout: 10000 }),
+          api.get("/admin/users", { timeout: 10000 }),
+          api.get("/admin/transactions", { timeout: 10000 }),
+          api.get("/admin/locations", { timeout: 10000 }),
+        ]);
+
+      // Process dashboard stats
+      if (dashboardRes.status === "fulfilled") {
+        const dashboardData = dashboardRes.value.data;
         setStats({
-          totalUsers: res.data.totalUsers,
-          totalAdmins: res.data.totalAdmins,
-          totalTransactions: res.data.totalTransactions,
+          totalUsers: dashboardData.totalUsers || 0,
+          totalAdmins: dashboardData.totalAdmins || 0,
+          totalTransactions: dashboardData.totalTransactions || 0,
         });
-      } catch (err) {
-        handleApiError(err, "Memuat statistik");
+      } else {
+        console.error("Dashboard fetch failed:", dashboardRes.reason);
+        // Set default stats if dashboard fails
+        setStats({
+          totalUsers: 0,
+          totalAdmins: 0,
+          totalTransactions: 0,
+        });
       }
+
+      // Process users
+      if (usersRes.status === "fulfilled") {
+        const users = usersRes.value.data || [];
+        setAllUsers(users);
+
+        // Update stats from actual user data if dashboard failed
+        if (dashboardRes.status === "rejected") {
+          setStats((prev) => ({
+            ...prev,
+            totalUsers: users.filter(
+              (u) => u.role === "user" || u.role === "peminjam"
+            ).length,
+            totalAdmins: users.filter((u) => u.role === "admin").length,
+          }));
+        }
+      } else {
+        console.error("Users fetch failed:", usersRes.reason);
+        setAllUsers([]);
+      }
+
+      // Process transactions
+      if (transactionsRes.status === "fulfilled") {
+        const transactions = transactionsRes.value.data || [];
+        setAllTransactions(transactions);
+
+        // Update stats from actual transaction data if dashboard failed
+        if (dashboardRes.status === "rejected") {
+          setStats((prev) => ({
+            ...prev,
+            totalTransactions: transactions.length,
+          }));
+        }
+      } else {
+        console.error("Transactions fetch failed:", transactionsRes.reason);
+        setAllTransactions([]);
+      }
+
+      // Process locations
+      if (locationsRes.status === "fulfilled") {
+        const locations = locationsRes.value.data || [];
+        setLocations(locations);
+      } else {
+        console.error("Locations fetch failed:", locationsRes.reason);
+        setLocations([]);
+      }
+
+      // Check if any critical data failed to load
+      const failedRequests = [
+        dashboardRes,
+        usersRes,
+        transactionsRes,
+        locationsRes,
+      ].filter((res) => res.status === "rejected");
+
+      if (failedRequests.length > 0) {
+        const failedCount = failedRequests.length;
+        setError(
+          `${failedCount} dari 4 data gagal dimuat. Beberapa fitur mungkin terbatas.`
+        );
+
+        // Log specific errors for debugging
+        failedRequests.forEach((req, index) => {
+          const endpoints = ["dashboard", "users", "transactions", "locations"];
+          console.error(`${endpoints[index]} error:`, req.reason);
+        });
+      }
+    } catch (err) {
+      console.error("Critical error in fetchAllData:", err);
+      setError("Gagal memuat data dashboard. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
     }
+  }, [token, navigate]);
 
-    fetchDashboard();
-  }, [handleApiError]);
-
-  const retryFetch = useCallback(() => {
-    if (retryCount >= 3) {
-      setError("Gagal memuat dashboard setelah beberapa kali percobaan.");
+  // Fallback function to fetch data one by one if parallel fails
+  const fetchDataSequentially = useCallback(async () => {
+    if (!token) {
+      setError("Token tidak ditemukan. Silakan login kembali.");
+      navigate("/login");
       return;
     }
 
-    const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-    setRetryCount((prev) => prev + 1);
-    setTimeout(() => {
-      fetchDashboardData();
-    }, delay);
-  }, [retryCount, fetchDashboardData]);
-
-  // Perbaikan 4: Optimasi fetchUsers
-  const fetchUsers = useCallback(async () => {
-    if (!token) return;
-
     try {
-      // Gunakan axiosInstance yang sudah dikonfigurasi
-      const res = await api.get("/admin/users", {
-        timeout: 5000,
+      setIsLoading(true);
+      setError("");
+
+      let users = [];
+      let transactions = [];
+      let locations = [];
+
+      // Fetch users first
+      try {
+        console.log("🔄 Fetching users...");
+        const usersResponse = await api.get("/admin/users", { timeout: 90000 });
+        users = usersResponse.data || [];
+        setAllUsers(users);
+        console.log("✅ Users loaded:", users.length);
+      } catch (err) {
+        console.error("❌ Users failed:", err.message);
+        setAllUsers([]);
+      }
+
+      // Fetch transactions
+      try {
+        console.log("🔄 Fetching transactions...");
+        const transactionsResponse = await api.get("/admin/transactions", {
+          timeout: 30000,
+        });
+        transactions = transactionsResponse.data || [];
+        setAllTransactions(transactions);
+        console.log("✅ Transactions loaded:", transactions.length);
+      } catch (err) {
+        console.error("❌ Transactions failed:", err.message);
+        setAllTransactions([]);
+      }
+
+      // Fetch locations
+      try {
+        console.log("🔄 Fetching locations...");
+        const locationsResponse = await api.get("/locations", {
+          timeout: 30000,
+        });
+        locations = locationsResponse.data || [];
+        setLocations(locations);
+        console.log("✅ Locations loaded:", locations.length);
+      } catch (err) {
+        console.error("❌ Locations failed:", err.message);
+        setLocations([]);
+      }
+
+      // Calculate stats from loaded data
+      const totalUsers = users.filter(
+        (u) => u.role === "user" || u.role === "peminjam"
+      ).length;
+      const totalAdmins = users.filter((u) => u.role === "admin").length;
+      const totalTransactions = transactions.length;
+
+      setStats({
+        totalUsers,
+        totalAdmins,
+        totalTransactions,
       });
-      setAllUsers(res.data);
-    } catch (error) {
-      handleApiError(error, "Memuat pengguna");
+
+      // Check what failed
+      const failedItems = [];
+      if (users.length === 0) failedItems.push("users");
+      if (transactions.length === 0) failedItems.push("transactions");
+      if (locations.length === 0) failedItems.push("locations");
+
+      if (failedItems.length > 0) {
+        setError(
+          `Beberapa data gagal dimuat: ${failedItems.join(
+            ", "
+          )}. Silakan refresh halaman.`
+        );
+      } else {
+        setError("");
+      }
+    } catch (err) {
+      console.error("💥 Critical error in sequential fetch:", err);
+      setError("Gagal memuat data dashboard. Periksa koneksi internet Anda.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [token, handleApiError]);
+  }, [token, navigate]);
+
+  // // Initial data fetch
+  // useEffect(() => {
+  //   fetchAllData();
+  // }, [fetchAllData]);
+
+  // // Retry function
+  // const retryFetch = useCallback(() => {
+  //   fetchAllData();
+  // }, [fetchAllData]);
+  // Updated retry function to use sequential fetching
+
+  const retryFetch = useCallback(() => {
+    console.log("🔄 Retrying with sequential fetch...");
+    fetchDataSequentially();
+  }, [fetchDataSequentially]);
+
+  // Initial data fetch with fallback
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await fetchAllData();
+      } catch {
+        console.log("🔄 Parallel fetch failed, trying sequential...");
+        await fetchDataSequentially();
+      }
+    };
+
+    loadData();
+  }, [fetchAllData, fetchDataSequentially]);
 
   const handleDeleteLocation = async (id) => {
     if (window.confirm("Yakin ingin menghapus lokasi ini?")) {
       try {
-        await api.delete(`/admin/location/${id}`);
-        // Refresh locations data
+        await api.delete(`/admin/locations/${id}`);
+        toast.success("Lokasi berhasil dihapus");
+        // Refresh only locations data
         const response = await api.get("/admin/locations");
         setLocations(response.data);
       } catch (err) {
         console.error("Gagal menghapus lokasi:", err);
-        setError("Gagal menghapus lokasi");
+        toast.error("Gagal menghapus lokasi");
       }
     }
   };
@@ -291,12 +346,10 @@ const DashboardAdmin = () => {
   const getFilteredTransactions = () => {
     return allTransactions.filter((trx) => {
       const matchStatus = filterStatus ? trx.status === filterStatus : true;
-
       const matchDate = filterDate
         ? new Date(trx.createdAt).toDateString() ===
           new Date(filterDate).toDateString()
         : true;
-
       return matchStatus && matchDate;
     });
   };
@@ -306,31 +359,24 @@ const DashboardAdmin = () => {
     if (!konfirmasi) return;
 
     try {
-      await api.delete(`/transactions/${id}`);
-      fetchDashboardData(); // refresh data setelah hapus
+      await api.delete(`/admin/transactions/${id}`);
+      toast.success("Transaksi berhasil dihapus");
+      // Update local state instead of refetching all data
+      setAllTransactions((prev) => prev.filter((trx) => trx._id !== id));
     } catch (err) {
-      console.error(
-        "Gagal menghapus transaksi:",
-        err.response?.data || err.message
-      );
-      setError("Gagal menghapus transaksi.");
+      console.error("Gagal menghapus transaksi:", err);
+      toast.error("Gagal menghapus transaksi");
     }
   };
 
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Yakin ingin menghapus pengguna ini?")) return;
+
     try {
-      const token = localStorage.getItem("token");
-      await api.delete(
-        `https://backend-psi-blond-70.vercel.app/api/admin/users/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.delete(`/admin/users/${userId}`);
       toast.success("Pengguna berhasil dihapus");
-      fetchUsers();
+      // Update local state instead of refetching all data
+      setAllUsers((prev) => prev.filter((user) => user._id !== userId));
     } catch (error) {
       console.error("Gagal menghapus pengguna:", error);
       toast.error("Gagal menghapus pengguna");
@@ -404,7 +450,7 @@ const DashboardAdmin = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Loading dengan progress indicator
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -412,24 +458,20 @@ const DashboardAdmin = () => {
           <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Memuat dashboard...</p>
           <p className="text-gray-500 text-sm mt-2">
-            {retryCount > 0
-              ? `Percobaan ke-${retryCount + 1}`
-              : "Sedang mengambil data dari server"}
+            Sedang mengambil data dari server
           </p>
           <div className="mt-4 bg-gray-200 rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
-              style={{
-                width: `${Math.min(100, (Date.now() % 10000) / 100)}%`,
-              }}></div>
+              className="bg-blue-600 h-2 rounded-full transition-all duration-1000 animate-pulse"
+              style={{ width: "60%" }}></div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Error state dengan berbagai opsi
-  if (error && !stats) {
+  // Critical error state (no data at all)
+  if (!stats && error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="text-center max-w-md">
@@ -439,14 +481,12 @@ const DashboardAdmin = () => {
           </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <div className="space-y-2">
-            {retryCount < 3 && (
-              <button
-                onClick={retryFetch}
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition">
-                {isLoading ? "Sedang mencoba..." : "Coba Lagi"}
-              </button>
-            )}
+            <button
+              onClick={retryFetch}
+              disabled={isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition">
+              {isLoading ? "Sedang mencoba..." : "Coba Lagi"}
+            </button>
             <button
               onClick={() => window.location.reload()}
               className="block w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
@@ -465,16 +505,23 @@ const DashboardAdmin = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Warning banner for partial data load */}
       {error && stats && (
-        <div className="fixed top-4 right-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg z-50 max-w-sm">
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-yellow-400" />
+            <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
             <div className="ml-3">
               <p className="text-sm text-yellow-800">{error}</p>
+              <button
+                onClick={retryFetch}
+                className="mt-2 text-xs text-yellow-700 underline hover:text-yellow-900">
+                Coba muat ulang
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {/* Sidebar - Desktop */}
       <div className="hidden md:flex flex-col bg-white border-r border-gray-200 w-60">
         <div className="flex items-center justify-start px-4 py-5 border-b border-gray-200">
@@ -490,28 +537,24 @@ const DashboardAdmin = () => {
             text="Dashboard"
             active={activeTab === "dashboard"}
             onClick={() => setActiveTab("dashboard")}
-            collapsed={false} // karena tidak collapsible
           />
           <SidebarLink
             icon={<Users />}
             text="Pengguna"
             active={activeTab === "users"}
             onClick={() => setActiveTab("users")}
-            collapsed={false}
           />
           <SidebarLink
             icon={<ShoppingBag />}
             text="Transaksi"
             active={activeTab === "transactions"}
             onClick={() => setActiveTab("transactions")}
-            collapsed={false}
           />
           <SidebarLink
             icon={<MapPin />}
             text="Lokasi"
             active={activeTab === "locations"}
             onClick={() => setActiveTab("locations")}
-            collapsed={false}
           />
         </nav>
 
@@ -587,7 +630,9 @@ const DashboardAdmin = () => {
               </nav>
             </div>
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-              <button className="flex items-center px-3 py-2 w-full text-red-600 hover:bg-red-50 rounded-md">
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-3 py-2 w-full text-red-600 hover:bg-red-50 rounded-md">
                 <LogOut className="h-5 w-5 mr-3" />
                 <span className="text-sm font-medium">Keluar</span>
               </button>
@@ -596,6 +641,7 @@ const DashboardAdmin = () => {
           <div className="flex-shrink-0 w-14"></div>
         </div>
       )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation */}
@@ -634,282 +680,260 @@ const DashboardAdmin = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50">
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="text-red-700 text-sm">{error}</div>
-            </div>
-          )}
-
           {/* Dashboard Tab */}
           {activeTab === "dashboard" && (
-            <>
-              {/* Dashboard Header */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Ringkasan Statistik
-                  </h2>
-                  <p className="text-gray-600 mt-1">
-                    Pantau dan kelola aktivitas PayungKu
-                  </p>
-                  {activeTab === "dashboard" && (
-                    <>
-                      <section className="w-full px-6 py-6 space-y-6">
-                        {/* Summary Cards */}
-                        <div className="grid gap-6 lg:grid-cols-4">
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">
-                                Total Pengguna
-                              </CardTitle>
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">
-                                {stats?.totalUsers ?? 0}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Pengguna terdaftar
-                              </p>
-                            </CardContent>
-                          </Card>
+            <section className="w-full space-y-6">
+              {/* Summary Cards */}
+              <div className="grid gap-6 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Pengguna
+                    </CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {stats?.totalUsers ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Pengguna terdaftar
+                    </p>
+                  </CardContent>
+                </Card>
 
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">
-                                Total Admin
-                              </CardTitle>
-                              <UserIcon className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">
-                                {stats?.totalAdmins ?? 0}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Administrator aktif
-                              </p>
-                            </CardContent>
-                          </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Admin
+                    </CardTitle>
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {stats?.totalAdmins ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Administrator aktif
+                    </p>
+                  </CardContent>
+                </Card>
 
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">
-                                Total Transaksi
-                              </CardTitle>
-                              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">
-                                {stats?.totalTransactions ?? 0}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Semua transaksi
-                              </p>
-                            </CardContent>
-                          </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Transaksi
+                    </CardTitle>
+                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {stats?.totalTransactions ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Semua transaksi
+                    </p>
+                  </CardContent>
+                </Card>
 
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">
-                                Total Lokasi
-                              </CardTitle>
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">
-                                {locations.length}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Lokasi tersedia
-                              </p>
-                            </CardContent>
-                          </Card>
-                        </div>
-
-                        {/* 4 Analytics Cards Horizontal */}
-                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
-                          {/* Distribusi Status Transaksi */}
-                          <Card className="h-full">
-                            <CardHeader>
-                              <CardTitle>Distribusi Status Transaksi</CardTitle>
-                              <CardDescription>
-                                Visualisasi status transaksi saat ini
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <ResponsiveContainer width="100%" height={250}>
-                                <PieChart>
-                                  <Pie
-                                    data={Object.entries(
-                                      allTransactions.reduce((acc, trx) => {
-                                        acc[trx.status] =
-                                          (acc[trx.status] || 0) + 1;
-                                        return acc;
-                                      }, {})
-                                    ).map(([status, value]) => ({
-                                      name: status,
-                                      value,
-                                    }))}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={80}
-                                    dataKey="value">
-                                    {Object.keys(
-                                      allTransactions.reduce((acc, trx) => {
-                                        acc[trx.status] =
-                                          (acc[trx.status] || 0) + 1;
-                                        return acc;
-                                      }, {})
-                                    ).map((_, index) => (
-                                      <Cell
-                                        key={`cell-${index}`}
-                                        fill={COLORS[index % COLORS.length]}
-                                      />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip />
-                                  <Legend />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </CardContent>
-                          </Card>
-
-                          {/* Transaksi Terbaru */}
-                          <Card className="h-full">
-                            <CardHeader>
-                              <CardTitle>Transaksi Terbaru</CardTitle>
-                              <CardDescription>
-                                5 transaksi terakhir
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
-                                {allTransactions.slice(0, 5).map((trx) => (
-                                  <div
-                                    key={trx._id}
-                                    className="flex items-center space-x-4">
-                                    <Avatar className="h-9 w-9">
-                                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                                        {trx.user?.name?.charAt(0) ?? "U"}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 space-y-1">
-                                      <p className="text-sm font-medium leading-none">
-                                        {trx.user?.name ??
-                                          "Pengguna tidak diketahui"}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {formatDate(trx.createdAt)}
-                                      </p>
-                                    </div>
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-xs">
-                                      {trx.status}
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Lokasi Terpopuler */}
-                          <Card className="h-full">
-                            <CardHeader>
-                              <CardTitle>Lokasi Terpopuler</CardTitle>
-                              <CardDescription>
-                                5 lokasi terbanyak dipinjam
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
-                                {getPopularLocations().map(
-                                  ([id, loc], index) => (
-                                    <div
-                                      key={id}
-                                      className="flex items-center space-x-4">
-                                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-medium">
-                                        {index + 1}
-                                      </div>
-                                      <div className="flex-1 space-y-1">
-                                        <p className="text-sm font-medium leading-none">
-                                          {loc.name}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {loc.count} kali peminjaman
-                                        </p>
-                                      </div>
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs">
-                                        {loc.count}x
-                                      </Badge>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Status Lokasi */}
-                          <Card className="h-full">
-                            <CardHeader>
-                              <CardTitle>Status Lokasi</CardTitle>
-                              <CardDescription>
-                                Ketersediaan stok tiap lokasi
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
-                                {locations.slice(0, 5).map((loc) => (
-                                  <div
-                                    key={loc._id}
-                                    className="flex items-center space-x-4">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
-                                      <MapPin className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex-1 space-y-1">
-                                      <p className="text-sm font-medium leading-none">
-                                        {loc.name}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {loc.lockers} loker tersedia
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col items-end space-y-1">
-                                      <Badge
-                                        variant={
-                                          loc.stock > 5
-                                            ? "default"
-                                            : loc.stock > 0
-                                            ? "secondary"
-                                            : "destructive"
-                                        }
-                                        className="text-xs">
-                                        {loc.stock} stok
-                                      </Badge>
-                                      <span className="text-xs text-muted-foreground">
-                                        {loc.stock > 5
-                                          ? "Tersedia"
-                                          : loc.stock > 0
-                                          ? "Terbatas"
-                                          : "Kosong"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </section>
-                    </>
-                  )}
-                </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Lokasi
+                    </CardTitle>
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{locations.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Lokasi tersedia
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-            </>
+
+              {/* Analytics Cards */}
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+                {/* Distribusi Status Transaksi */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Distribusi Status Transaksi</CardTitle>
+                    <CardDescription>
+                      Visualisasi status transaksi saat ini
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(
+                            allTransactions.reduce((acc, trx) => {
+                              acc[trx.status] = (acc[trx.status] || 0) + 1;
+                              return acc;
+                            }, {})
+                          ).map(([status, value]) => ({
+                            name: status,
+                            value,
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value">
+                          {Object.keys(
+                            allTransactions.reduce((acc, trx) => {
+                              acc[trx.status] = (acc[trx.status] || 0) + 1;
+                              return acc;
+                            }, {})
+                          ).map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Transaksi Terbaru */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Transaksi Terbaru</CardTitle>
+                    <CardDescription>5 transaksi terakhir</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {allTransactions.slice(0, 5).map((trx) => (
+                        <div
+                          key={trx._id}
+                          className="flex items-center space-x-4">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback className="bg-blue-100 text-blue-600">
+                              {trx.user?.name?.charAt(0) ?? "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">
+                              {trx.user?.name ?? "Pengguna tidak diketahui"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(trx.createdAt)}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {trx.status}
+                          </Badge>
+                        </div>
+                      ))}
+                      {allTransactions.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Belum ada transaksi</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lokasi Terpopuler */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Lokasi Terpopuler</CardTitle>
+                    <CardDescription>
+                      5 lokasi terbanyak dipinjam
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {getPopularLocations().map(([id, loc], index) => (
+                        <div key={id} className="flex items-center space-x-4">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-medium">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">
+                              {loc.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {loc.count} kali peminjaman
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {loc.count}x
+                          </Badge>
+                        </div>
+                      ))}
+                      {getPopularLocations().length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Belum ada data peminjaman</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Status Lokasi */}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Status Lokasi</CardTitle>
+                    <CardDescription>
+                      Ketersediaan stok tiap lokasi
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {locations.slice(0, 5).map((loc) => (
+                        <div
+                          key={loc._id}
+                          className="flex items-center space-x-4">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
+                            <MapPin className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">
+                              {loc.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {loc.lockers} loker tersedia
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <Badge
+                              variant={
+                                loc.stock > 5
+                                  ? "default"
+                                  : loc.stock > 0
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                              className="text-xs">
+                              {loc.stock} stok
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {loc.stock > 5
+                                ? "Tersedia"
+                                : loc.stock > 0
+                                ? "Terbatas"
+                                : "Kosong"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {locations.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Belum ada lokasi terdaftar</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
           )}
 
           {/* Users Tab */}
@@ -977,9 +1001,6 @@ const DashboardAdmin = () => {
                               className="text-gray-400 hover:text-gray-500">
                               <Eye className="h-4 w-4" />
                             </button>
-                            {/* <button className="text-gray-400 hover:text-gray-500">
-                              <Edit className="h-4 w-4" />
-                            </button> */}
                             <button
                               onClick={() => handleDeleteUser(user._id)}
                               className="text-gray-400 hover:text-gray-500">
@@ -1020,7 +1041,6 @@ const DashboardAdmin = () => {
               <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
                 <h2 className="text-lg font-semibold mb-4">Filter Transaksi</h2>
                 <div className="space-y-4">
-                  {/* Filter berdasarkan status */}
                   <select
                     className="w-full border rounded p-2"
                     value={filterStatus}
@@ -1030,7 +1050,6 @@ const DashboardAdmin = () => {
                     <option value="returned">Dikembalikan</option>
                   </select>
 
-                  {/* Filter berdasarkan hari */}
                   <input
                     type="date"
                     className="w-full border rounded p-2"
@@ -1038,7 +1057,6 @@ const DashboardAdmin = () => {
                     onChange={(e) => setFilterDate(e.target.value)}
                   />
 
-                  {/* Tombol aksi */}
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => setIsFilterOpen(false)}
@@ -1047,7 +1065,7 @@ const DashboardAdmin = () => {
                     </button>
                     <button
                       onClick={() => {
-                        setCurrentPage(1); // penting untuk reset pagination
+                        setCurrentPage(1);
                         setIsFilterOpen(false);
                       }}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md">
@@ -1093,7 +1111,6 @@ const DashboardAdmin = () => {
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Pengguna
                       </th>
-
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1139,7 +1156,7 @@ const DashboardAdmin = () => {
                             key={transaction._id}
                             className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              #{transaction._id}
+                              #{transaction._id.slice(-6)}
                             </td>
 
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1186,9 +1203,6 @@ const DashboardAdmin = () => {
                                   className="text-gray-400 hover:text-gray-500">
                                   <Eye className="h-4 w-4" />
                                 </button>
-                                {/* <button className="text-gray-400 hover:text-gray-500">
-                                  <Edit className="h-4 w-4" />
-                                </button> */}
                                 <button
                                   onClick={() =>
                                     handleDeleteTransaction(transaction._id)
@@ -1208,8 +1222,8 @@ const DashboardAdmin = () => {
               <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
                 <div className="text-sm text-gray-500">
                   Menampilkan {indexOfFirstItem + 1} -{" "}
-                  {Math.min(indexOfLastItem, allTransactions.length)} dari{" "}
-                  {allTransactions.length} transaksi
+                  {Math.min(indexOfLastItem, filteredTransactions.length)} dari{" "}
+                  {filteredTransactions.length} transaksi
                 </div>
                 <Pagination
                   currentPage={currentPage}
@@ -1232,7 +1246,10 @@ const DashboardAdmin = () => {
           {showAddLocation && (
             <AddLocationForm
               onClose={() => setShowAddLocation(false)}
-              onLocationAdded={fetchDashboardData()}
+              onLocationAdded={() => {
+                setShowAddLocation(false);
+                fetchAllData(); // Refresh all data after adding location
+              }}
             />
           )}
           {activeTab === "locations" && (
