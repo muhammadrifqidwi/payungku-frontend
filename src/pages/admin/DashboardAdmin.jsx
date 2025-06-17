@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/axiosInstance";
 import TransactionDetail from "../../components/admin/TransactionDetail";
@@ -8,7 +8,6 @@ import UserDetail from "../../components/admin/UserDetail";
 import LocationDetail from "../../components/admin/LocationDetail";
 import AddLocationForm from "../../components/admin/AddLocation";
 import { toast } from "sonner";
-import axios from "axios";
 import {
   PieChart,
   Pie,
@@ -73,6 +72,7 @@ const DashboardAdmin = () => {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locations, setLocations] = useState([]);
@@ -88,58 +88,193 @@ const DashboardAdmin = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const token = localStorage.getItem("token");
+  const token = useMemo(() => localStorage.getItem("token"), []);
+
+  // Error handling yang lebih spesifik
+  const handleApiError = useCallback(
+    (err, context) => {
+      console.error(`${context} error:`, err);
+
+      if (err.code === "ECONNABORTED") {
+        setError(
+          `Koneksi timeout. Server membutuhkan waktu terlalu lama untuk merespons. (Percobaan: ${
+            retryCount + 1
+          }/3)`
+        );
+        return;
+      }
+
+      if (err.response?.status === 401) {
+        setError("Sesi Anda telah berakhir. Silakan login kembali.");
+        localStorage.clear();
+        navigate("/login");
+        return;
+      }
+
+      if (err.response?.status === 500) {
+        setError("Server sedang mengalami masalah. Silakan coba lagi nanti.");
+        return;
+      }
+
+      if (err.code === "NETWORK_ERROR" || !err.response) {
+        setError(
+          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
+        );
+        return;
+      }
+
+      setError(err.response?.data?.message || `Gagal ${context.toLowerCase()}`);
+    },
+    [navigate, retryCount]
+  );
+
+  // Fetch data secara terpisah untuk menghindari timeout
+  // const fetchDataSeparately = useCallback(async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError("");
+
+  //     const [usersRes, transactionsRes, locationsRes] =
+  //       await Promise.allSettled([
+  //         api.get("/admin/users"), // gunakan default timeout
+  //         api.get("/admin/transactions"),
+  //         api.get("/admin/locations"),
+  //       ]);
+
+  //     const users = usersRes.status === "fulfilled" ? usersRes.value.data : [];
+  //     const transactions =
+  //       transactionsRes.status === "fulfilled"
+  //         ? transactionsRes.value.data
+  //         : [];
+  //     const locations =
+  //       locationsRes.status === "fulfilled" ? locationsRes.value.data : [];
+
+  //     if (usersRes.status === "rejected")
+  //       console.warn("Gagal memuat pengguna:", usersRes.reason);
+  //     if (transactionsRes.status === "rejected")
+  //       console.warn("Gagal memuat transaksi:", transactionsRes.reason);
+  //     if (locationsRes.status === "rejected")
+  //       console.warn("Gagal memuat lokasi:", locationsRes.reason);
+
+  //     setStats({
+  //       totalUsers: users.filter((u) => u.role === "peminjam").length,
+  //       totalAdmins: users.filter((u) => u.role === "admin").length,
+  //       totalTransactions: transactions.length,
+  //     });
+
+  //     setAllUsers(users);
+  //     setAllTransactions(transactions);
+  //     setLocations(locations);
+
+  //     const failedCount = [usersRes, transactionsRes, locationsRes].filter(
+  //       (r) => r.status === "rejected"
+  //     ).length;
+  //     if (failedCount > 0) {
+  //       setError(`${failedCount} dari 3 data gagal dimuat.`);
+  //     } else {
+  //       setError("");
+  //       setRetryCount(0);
+  //     }
+  //   } catch (err) {
+  //     console.error("Dashboard fetch error:", err);
+  //     handleApiError(err, "Memuat dashboard");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }, [handleApiError]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await api.get("/admin/dashboard"); // Use axiosInstance
-      const { users, transactions, locations } = res.data;
+      setError("");
 
-      setStats({
-        totalUsers: users.filter((u) => u.role === "peminjam").length,
-        totalAdmins: users.filter((u) => u.role === "admin").length,
-        totalTransactions: transactions.length,
-      });
+      const res = await api.get("/admin/dashboard/data");
 
+      const {
+        users = [],
+        transactions = [],
+        locations = [],
+        totalUsers = 0,
+        totalAdmins = 0,
+        totalTransactions = 0,
+      } = res.data;
+
+      setStats({ totalUsers, totalAdmins, totalTransactions });
       setAllUsers(users);
       setAllTransactions(transactions);
       setLocations(locations);
-      setError("");
+
+      setRetryCount(0); // Reset retry jika sukses
     } catch (err) {
-      console.error("Failed to load dashboard", err);
-      setError("Gagal mengambil data dashboard");
+      console.error("Gagal memuat dashboard:", err);
+      setError("Gagal memuat data dashboard.");
+      handleApiError(err, "Memuat dashboard");
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get(
-        "https://backend-psi-blond-70.vercel.app/api/users",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      setAllUsers(res.data);
-    } catch (error) {
-      console.error("Gagal memuat pengguna:", error);
-    }
-  };
+  }, [handleApiError]);
 
   useEffect(() => {
+    if (!token) {
+      setError("Tidak ada token autentikasi");
+      navigate("/login");
+      return;
+    }
+
     fetchDashboardData();
-  }, [fetchDashboardData, token]);
+  }, [token, navigate, fetchDashboardData]);
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await api.get("/admin/dashboard/stats");
+        setStats({
+          totalUsers: res.data.totalUsers,
+          totalAdmins: res.data.totalAdmins,
+          totalTransactions: res.data.totalTransactions,
+        });
+      } catch (err) {
+        handleApiError(err, "Memuat statistik");
+      }
+    }
+
+    fetchDashboard();
+  }, [handleApiError]);
+
+  const retryFetch = useCallback(() => {
+    if (retryCount >= 3) {
+      setError("Gagal memuat dashboard setelah beberapa kali percobaan.");
+      return;
+    }
+
+    const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+    setRetryCount((prev) => prev + 1);
+    setTimeout(() => {
+      fetchDashboardData();
+    }, delay);
+  }, [retryCount, fetchDashboardData]);
+
+  // Perbaikan 4: Optimasi fetchUsers
+  const fetchUsers = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      // Gunakan axiosInstance yang sudah dikonfigurasi
+      const res = await api.get("/admin/users", {
+        timeout: 5000,
+      });
+      setAllUsers(res.data);
+    } catch (error) {
+      handleApiError(error, "Memuat pengguna");
+    }
+  }, [token, handleApiError]);
 
   const handleDeleteLocation = async (id) => {
     if (window.confirm("Yakin ingin menghapus lokasi ini?")) {
       try {
-        await api.delete(`/location/${id}`);
+        await api.delete(`/admin/location/${id}`);
         // Refresh locations data
-        const response = await api.get("/locations");
+        const response = await api.get("/admin/locations");
         setLocations(response.data);
       } catch (err) {
         console.error("Gagal menghapus lokasi:", err);
@@ -269,12 +404,60 @@ const DashboardAdmin = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  if (isLoading && !stats) {
+  // Loading dengan progress indicator
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Memuat dashboard...</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {retryCount > 0
+              ? `Percobaan ke-${retryCount + 1}`
+              : "Sedang mengambil data dari server"}
+          </p>
+          <div className="mt-4 bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+              style={{
+                width: `${Math.min(100, (Date.now() % 10000) / 100)}%`,
+              }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state dengan berbagai opsi
+  if (error && !stats) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            Gagal Memuat Dashboard
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="space-y-2">
+            {retryCount < 3 && (
+              <button
+                onClick={retryFetch}
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition">
+                {isLoading ? "Sedang mencoba..." : "Coba Lagi"}
+              </button>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              className="block w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+              Refresh Halaman
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="block w-full px-4 py-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition">
+              Kembali ke Beranda
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -282,6 +465,16 @@ const DashboardAdmin = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {error && stats && (
+        <div className="fixed top-4 right-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg z-50">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-yellow-400" />
+            <div className="ml-3">
+              <p className="text-sm text-yellow-800">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Sidebar - Desktop */}
       <div className="hidden md:flex flex-col bg-white border-r border-gray-200 w-60">
         <div className="flex items-center justify-start px-4 py-5 border-b border-gray-200">
@@ -1039,7 +1232,7 @@ const DashboardAdmin = () => {
           {showAddLocation && (
             <AddLocationForm
               onClose={() => setShowAddLocation(false)}
-              onLocationAdded={fetchDashboardData}
+              onLocationAdded={fetchDashboardData()}
             />
           )}
           {activeTab === "locations" && (

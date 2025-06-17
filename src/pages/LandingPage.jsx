@@ -97,32 +97,34 @@ const WeatherWidget = ({ weather, currentDate }) => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      className={`${recommendation.bgColor} ${recommendation.borderColor} border backdrop-blur-sm rounded-xl p-4`}>
-      <div className="flex items-center gap-3">
-        <div className="bg-white/80 rounded-full p-2 shadow-sm">
+      className={`${recommendation.bgColor} ${recommendation.borderColor} border backdrop-blur-sm rounded-xl p-3 sm:p-4 shadow-lg`}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="bg-white/80 rounded-full p-1.5 sm:p-2 shadow-sm flex-shrink-0">
           <WeatherIcon
             weatherCode={weather.weather[0].id}
-            className="w-6 h-6 text-blue-600"
+            className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
           />
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-            <MapPin className="w-3 h-3" />
-            <span className="text-xs">{currentDate}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 mb-1">
+            <MapPin className="w-3 h-3 flex-shrink-0" />
+            <span className="text-xs truncate">{currentDate}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-gray-900">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg sm:text-xl font-bold text-gray-900">
               {Math.round(weather.main.temp)}°C
             </span>
-            <span className="text-sm font-medium text-gray-700 capitalize">
+            <span className="text-xs sm:text-sm font-medium text-gray-700 capitalize truncate">
               {weather.weather[0].description}
             </span>
           </div>
         </div>
       </div>
-      <div className="mt-2 text-xs font-medium flex items-center gap-1">
-        <CloudRain className="w-3 h-3" />
-        <span className={recommendation.color}>{recommendation.message}</span>
+      <div className="mt-2 text-xs font-medium flex items-start gap-1">
+        <CloudRain className="w-3 h-3 flex-shrink-0 mt-0.5" />
+        <span className={`${recommendation.color} leading-tight`}>
+          {recommendation.message}
+        </span>
       </div>
     </motion.div>
   );
@@ -170,29 +172,29 @@ const WeatherCard = ({ weather, currentDate }) => {
       transition={{ duration: 0.6 }}
       className={`${recommendation.bgColor} ${recommendation.borderColor} border-2 rounded-2xl shadow-lg backdrop-blur-sm overflow-hidden`}>
       {/* Main Weather Display */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 rounded-full p-3 shadow-md">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-white/80 rounded-full p-2 sm:p-3 shadow-md">
               <WeatherIcon
                 weatherCode={weather.weather[0].id}
-                className="w-8 h-8 text-blue-600"
+                className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"
               />
             </div>
             <div>
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                 <MapPin className="w-4 h-4" />
-                <span>{currentDate}</span>
+                <span className="text-xs sm:text-sm">{currentDate}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-gray-900">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {Math.round(weather.main.temp)}°C
                 </span>
                 <div>
-                  <p className="font-semibold text-gray-800 capitalize">
+                  <p className="font-semibold text-gray-800 capitalize text-sm sm:text-base">
                     {weather.weather[0].description}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Terasa seperti {Math.round(weather.main.feels_like)}°C
                   </p>
                 </div>
@@ -202,7 +204,7 @@ const WeatherCard = ({ weather, currentDate }) => {
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="bg-white/80 hover:bg-white/90 rounded-full p-2 shadow-md transition-all duration-200">
+            className="bg-white/80 hover:bg-white/90 rounded-full p-2 shadow-md transition-all duration-200 flex-shrink-0">
             {isExpanded ? (
               <ChevronUp className="w-5 h-5 text-gray-600" />
             ) : (
@@ -215,9 +217,9 @@ const WeatherCard = ({ weather, currentDate }) => {
         <div
           className={`mt-4 p-3 ${recommendation.bgColor} rounded-lg border ${recommendation.borderColor}`}>
           <p
-            className={`text-sm font-medium ${recommendation.color} flex items-center gap-2`}>
-            <CloudRain className="w-4 h-4" />
-            {recommendation.message}
+            className={`text-sm font-medium ${recommendation.color} flex items-start gap-2`}>
+            <CloudRain className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span className="leading-tight">{recommendation.message}</span>
           </p>
         </div>
       </div>
@@ -231,36 +233,36 @@ const WeatherCard = ({ weather, currentDate }) => {
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="overflow-hidden">
-        <div className="px-6 pb-6 border-t border-white/50">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div className="bg-white/60 rounded-lg p-3 text-center">
-              <Eye className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-white/50">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4">
+            <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-gray-600 mb-1">Jarak Pandang</p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-gray-800 text-sm">
                 {(weather.visibility / 1000).toFixed(1)} km
               </p>
             </div>
 
-            <div className="bg-white/60 rounded-lg p-3 text-center">
-              <Droplets className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
+              <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-gray-600 mb-1">Kelembaban</p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-gray-800 text-sm">
                 {weather.main.humidity}%
               </p>
             </div>
 
-            <div className="bg-white/60 rounded-lg p-3 text-center">
-              <Wind className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
+              <Wind className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-gray-600 mb-1">Kecepatan Angin</p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-gray-800 text-sm">
                 {weather.wind?.speed || 0} m/s
               </p>
             </div>
 
-            <div className="bg-white/60 rounded-lg p-3 text-center">
-              <Thermometer className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
+              <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-gray-600 mb-1">Tekanan</p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-gray-800 text-sm">
                 {weather.main.pressure} hPa
               </p>
             </div>
@@ -323,7 +325,7 @@ export default function LandingPage() {
   }, [currentPage, locations, itemsPerPage]);
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_OPENWEATHER_API; // Ganti dengan API key kamu
+    const apiKey = "4bc92620502d40dc0e9b602ee7dd757e"; // Ganti dengan API key kamu
     const lat = -6.595; // Koordinat Bogor
     const lon = 106.816;
 
@@ -430,19 +432,20 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Hero Section */}
       <section
         id="beranda"
-        className="bg-gradient-to-b from-[#ebf5ff] to-white min-h-screen flex items-center">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 sm:pt-10">
-          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+        className="bg-gradient-to-b from-[#ebf5ff] to-white min-h-screen flex items-center pt-20 sm:pt-16 lg:pt-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-10 lg:items-center">
+            {/* Content */}
             <motion.div
-              className="sm:text-center md:max-w-xl md:mx-auto lg:col-span-6 lg:text-left "
+              className="text-center lg:text-left lg:col-span-6 mb-10 lg:mb-0"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUp}
               custom={0}>
+              {/* Badge */}
               <motion.div
                 className="inline-flex items-center px-4 py-2 rounded-full bg-[#dbeafe] text-[#1e40af] mb-4"
                 variants={fadeUp}
@@ -453,18 +456,20 @@ export default function LandingPage() {
                 </span>
               </motion.div>
 
+              {/* Main Title */}
               <motion.h1
-                className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl"
+                className="text-4xl sm:text-5xl md:text-6xl tracking-tight font-extrabold text-gray-900 mb-2 leading-tight"
                 variants={fadeUp}
                 custom={2}>
-                <span className="block">Sewa Payung</span>
-                <span className="block text-[#3b82f6]">
+                <span className="block leading-none">Sewa Payung</span>
+                <span className="block text-[#3b82f6] leading-none">
                   Kapanpun Dibutuhkan
                 </span>
               </motion.h1>
 
+              {/* Description */}
               <motion.p
-                className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0"
+                className="mt-4 text-base sm:text-lg md:text-xl text-gray-500 max-w-xl lg:mx-0 mx-auto"
                 variants={fadeUp}
                 custom={3}>
                 PayungKu menyediakan layanan sewa payung mandiri di berbagai
@@ -472,8 +477,9 @@ export default function LandingPage() {
                 lokasi terdekat.
               </motion.p>
 
+              {/* CTA Buttons */}
               <motion.div
-                className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4"
+                className="mt-6 flex flex-row flex-wrap gap-3 justify-center lg:justify-start"
                 variants={fadeUp}
                 custom={4}>
                 <a
@@ -482,21 +488,22 @@ export default function LandingPage() {
                       .getElementById("lokasi")
                       ?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="inline-flex items-center justify-center px-5 py-3 text-base font-medium rounded-md text-[#3b82f6] bg-[#dbeafe] hover:bg-[#bfdbfe] transition-shadow duration-300 shadow scroll-smooth cursor-pointer">
-                  <MapPin className="h-5 w-5 mr-2" />
+                  className="inline-flex items-center justify-center px-4 py-2 text-xs sm:text-sm lg:px-6 lg:py-3 lg:text-base font-medium rounded-md text-[#3b82f6] bg-[#dbeafe] hover:bg-[#bfdbfe] transition shadow cursor-pointer whitespace-nowrap">
+                  <MapPin className="h-4 w-4 sm:h-3 sm:w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 mr-2" />
                   Temukan Lokasi
                 </a>
+
                 <a
                   href="/transaksi"
-                  className="inline-flex items-center justify-center px-5 py-3 text-base font-medium rounded-md text-white bg-[#3b82f6] hover:bg-[#2563eb] transition-shadow duration-300 shadow">
+                  className="inline-flex items-center justify-center px-4 py-2 text-xs sm:text-sm lg:px-6 lg:py-3 lg:text-base font-medium rounded-md text-white bg-[#3b82f6] hover:bg-[#2563eb] transition shadow whitespace-nowrap">
                   Sewa Sekarang
                 </a>
               </motion.div>
 
-              {/* Compact Weather Widget in Hero */}
+              {/* Weather Widget */}
               {weather && (
                 <motion.div
-                  className="mt-8"
+                  className="mt-6"
                   variants={fadeUp}
                   custom={5}
                   initial="hidden"
@@ -506,18 +513,20 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </motion.div>
+
+            {/* Image */}
             <motion.div
-              className="mt-10 order-last lg:order-none relative w-full sm:max-w-full sm:mx-auto lg:col-span-6 lg:flex lg:items-center"
+              className="lg:col-span-6 flex justify-center lg:justify-end"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUp}
-              custom={5}>
-              <div className="relative mx-auto w-full max-w-md sm:max-w-lg">
+              custom={6}>
+              <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl">
                 <img
-                  src={HeroImage}
+                  src={HeroImage || "/placeholder.svg"}
                   alt="Ilustrasi Pengguna Payung"
-                  className="w-full h-auto object-contain transition-transform duration-500 ease-in-out hover:scale-105"
+                  className="w-full h-auto max-h-[480px] object-contain transition-transform duration-500 ease-in-out hover:scale-105"
                 />
               </div>
             </motion.div>
@@ -527,19 +536,19 @@ export default function LandingPage() {
 
       {/* Weather Section - Dedicated section between Hero and Tata Cara*/}
       {/* {weather && (
-        <section className="py-16 bg-gradient-to-b from-white to-gray-50">
+        <section className="py-12 sm:py-16 bg-gradient-to-b from-white to-gray-50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
-              className="text-center mb-8"
+              className="text-center mb-6 sm:mb-8"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUp}
               custom={1}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 Kondisi Cuaca Hari Ini
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm sm:text-base">
                 Pantau cuaca untuk merencanakan aktivitas Anda
               </p>
             </motion.div>
@@ -549,7 +558,7 @@ export default function LandingPage() {
       )} */}
 
       {/* Tata Cara */}
-      <section id="tata-cara" className="max-w-6xl mx-auto px-4 py-24">
+      <section id="tata-cara" className="max-w-6xl mx-auto px-4 py-16 sm:py-24">
         <TataCara />
       </section>
 
@@ -560,12 +569,12 @@ export default function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true, amount: 0.3 }}
-        className="bg-[#f8fafc] min-h-[80vh] py-24 flex items-center">
+        className="bg-[#f8fafc] py-16 sm:py-24 flex items-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Biaya Sewa Payung
           </h2>
-          <p className="text-lg text-gray-600 mb-12">
+          <p className="text-base sm:text-lg text-gray-600 mb-8 sm:mb-12">
             Sewa payung dengan harga terjangkau untuk kebutuhan harian Anda
           </p>
 
@@ -573,24 +582,24 @@ export default function LandingPage() {
             initial={{ scale: 0.95, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="bg-white shadow-lg rounded-2xl p-8 border border-blue-200 inline-block">
-            <h3 className="text-xl font-semibold text-blue-600 mb-2">
+            className="bg-white shadow-lg rounded-2xl p-6 sm:p-8 border border-blue-200 inline-block max-w-sm sm:max-w-none">
+            <h3 className="text-lg sm:text-xl font-semibold text-blue-600 mb-2">
               Paket Harian
             </h3>
-            <p className="text-5xl font-extrabold text-gray-900 mb-1">
+            <p className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-1">
               Rp12.000
             </p>
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-500 mb-4 text-sm sm:text-base">
               Berlaku hingga pukul 19.00 di hari yang sama
             </p>
-            <ul className="text-left text-gray-600 space-y-2 mb-6">
+            <ul className="text-left text-gray-600 space-y-2 mb-6 text-sm sm:text-base">
               <li>✔ Gunakan payung seharian penuh</li>
               <li>✔ Kembalikan di lokasi manapun</li>
               <li>✔ Tidak perlu registrasi ulang</li>
             </ul>
             <a
               href="#lokasi"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow transition">
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow transition text-sm sm:text-base">
               Mulai Sewa Sekarang
             </a>
           </motion.div>
@@ -612,19 +621,19 @@ export default function LandingPage() {
       />
 
       {/* FAQ Section */}
-      <section id="faq" className="bg-[#f8fafc] py-24">
+      <section id="faq" className="bg-[#f8fafc] py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
             custom={1}>
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Pertanyaan yang Sering Diajukan
             </h2>
-            <p className="max-w-2xl mx-auto text-xl text-gray-500">
+            <p className="max-w-2xl mx-auto text-lg sm:text-xl text-gray-500">
               Temukan jawaban untuk pertanyaan umum tentang PayungKu
             </p>
           </motion.div>
@@ -640,7 +649,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div
-            className="mt-12 text-center"
+            className="mt-8 sm:mt-12 text-center"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}

@@ -76,38 +76,41 @@ export default function Register() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Back to home button */}
-      <div className="absolute top-6 left-6 z-50">
+      {/* Back to home button - Mobile Responsive */}
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-50">
         <button
           onClick={() => navigate("/")}
-          className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="font-medium">Kembali ke Beranda</span>
+          className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="font-medium hidden xs:inline">
+            Kembali ke Beranda
+          </span>
+          <span className="font-medium xs:hidden">Beranda</span>
         </button>
       </div>
 
-      <div className="relative z-10 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="relative z-10 flex items-center justify-center min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           {/* Header Section */}
           <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100">
-                <Umbrella className="h-12 w-12 text-blue-600 mx-auto" />
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-lg border border-gray-100">
+                <Umbrella className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600 mx-auto" />
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-gray-900">
+            <div className="space-y-2 sm:space-y-3">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Daftar Akun PayungKu
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 px-2">
                 Bergabunglah dan nikmati layanan sewa payung dengan mudah
               </p>
             </div>
           </div>
 
           {/* Register Form */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 space-y-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 space-y-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Name Input */}
               <div className="space-y-2">
@@ -268,7 +271,7 @@ export default function Register() {
           {/* Login Link */}
           <div className="text-center">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-100">
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 Sudah punya akun?{" "}
                 <button
                   onClick={() => navigate("/login")}
