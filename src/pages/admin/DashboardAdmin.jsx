@@ -103,10 +103,10 @@ const DashboardAdmin = () => {
       // Fetch all data in parallel with proper error handling
       const [dashboardRes, usersRes, transactionsRes, locationsRes] =
         await Promise.allSettled([
-          api.get("/dashboard/data", { timeout: 30000 }),
-          api.get("/users", { timeout: 30000 }),
-          api.get("/transactions", { timeout: 30000 }),
-          api.get("/locations", { timeout: 30000 }),
+          api.get("/admin/dashboard/data", { timeout: 30000 }),
+          api.get("/admin/users", { timeout: 30000 }),
+          api.get("/admin/transactions", { timeout: 30000 }),
+          api.get("/admin/locations", { timeout: 30000 }),
         ]);
 
       // Process dashboard stats

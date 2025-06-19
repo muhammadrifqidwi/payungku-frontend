@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "https://backend-psi-blond-70.vercel.app/api",
-  timeout: 90000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -91,8 +91,8 @@ export const apiWithTimeout = (timeout) => {
 
 // Specific API calls dengan timeout yang disesuaikan
 export const dashboardAPI = {
-  getUsers: () => api.get("/admin/users", { timeout: 20000 }),
+  getUsers: () => api.get("/admin/users", { timeout: 30000 }),
   getTransactions: () => api.get("/admin/transactions", { timeout: 30000 }),
-  getLocations: () => api.get("/admin/locations", { timeout: 15000 }),
-  getDashboard: () => api.get("/admin/dashboard/data", { timeout: 45000 }),
+  getLocations: () => api.get("/admin/locations", { timeout: 30000 }),
+  getDashboard: () => api.get("/admin/dashboard/data", { timeout: 30000 }),
 };
