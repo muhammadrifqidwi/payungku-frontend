@@ -103,10 +103,10 @@ const DashboardAdmin = () => {
       // Fetch all data in parallel with proper error handling
       const [dashboardRes, usersRes, transactionsRes, locationsRes] =
         await Promise.allSettled([
-          api.get("/admin/dashboard/data", { timeout: 10000 }),
-          api.get("/admin/users", { timeout: 10000 }),
-          api.get("/admin/transactions", { timeout: 10000 }),
-          api.get("/admin/locations", { timeout: 10000 }),
+          api.get("/dashboard/data", { timeout: 30000 }),
+          api.get("/users", { timeout: 30000 }),
+          api.get("/transactions", { timeout: 30000 }),
+          api.get("/locations", { timeout: 30000 }),
         ]);
 
       // Process dashboard stats
@@ -220,7 +220,7 @@ const DashboardAdmin = () => {
       // Fetch users first
       try {
         console.log("🔄 Fetching users...");
-        const usersResponse = await api.get("/admin/users", { timeout: 90000 });
+        const usersResponse = await api.get("/admin/users", { timeout: 30000 });
         users = usersResponse.data || [];
         setAllUsers(users);
         console.log("✅ Users loaded:", users.length);
@@ -313,7 +313,7 @@ const DashboardAdmin = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchAllData();
+        await fetchDataSequentially();
       } catch {
         console.log("🔄 Parallel fetch failed, trying sequential...");
         await fetchDataSequentially();
