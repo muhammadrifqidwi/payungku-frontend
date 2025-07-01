@@ -15,8 +15,6 @@ import LandingPage from "./pages/LandingPage.jsx";
 import Login from "./pages/auth/Login.jsx";
 import Register from "./pages/auth/Register.jsx";
 import DashboardAdmin from "./pages/admin/DashboardAdmin.jsx";
-import Profile from "./pages/ProfilePage.jsx";
-import ListLokasi from "./pages/ListLokasi.jsx";
 import Transaksi from "./pages/TransactionPage.jsx";
 import ProfilePage from "./pages/ProfilePage";
 import ReturnValidationPage from "./pages/ReturnValidationPage.jsx";
@@ -82,7 +80,6 @@ function LayoutWrapper() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/list-lokasi" element={<ListLokasi />} />
           <Route
             path="/return/validate/:token"
             element={<ReturnValidationPage />}

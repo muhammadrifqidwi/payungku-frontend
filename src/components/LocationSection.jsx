@@ -43,22 +43,21 @@ function LocationSection({
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {locations.map((loc) => (
               <Marker key={loc._id} position={[loc.latitude, loc.longitude]}>
-                <Popup>
-                  <div>
-                    <h3 className="font-semibold text-lg">{loc.name}</h3>
-                    <p>
-                      <strong>Alamat:</strong> {loc.address}
-                    </p>
-                    <p>
-                      <strong>Stok Payung:</strong> {loc.stock}
-                    </p>
-                    <p>
-                      <strong>Loker Tersedia:</strong> {loc.lockers}
-                    </p>
-                    <p>
-                      <strong>Keterangan:</strong>{" "}
-                      {loc.description || "Tidak ada keterangan"}
-                    </p>
+                <Popup maxWidth={260} className="leaflet-popup-content-wrapper">
+                  <div className="text-gray-800 text-sm">
+                    <h3 className="text-lg font-bold text-blue-700 mb-2">
+                      {loc.name}
+                    </h3>
+                    <div className="space-y-1">
+                      <p>
+                        <span className="font-medium">☂️ Stok Payung:</span>{" "}
+                        {loc.stock ?? 0}
+                      </p>
+                      <p>
+                        <span className="font-medium">🔒 Loker Tersedia:</span>{" "}
+                        {loc.lockers ?? 0}
+                      </p>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -110,9 +109,6 @@ function LocationSection({
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {loc.name}
                   </h3>
-                  <p className="text-gray-600 text-sm mb-1">
-                    <span className="font-medium">Alamat:</span> {loc.address}
-                  </p>
                   <p className="text-gray-600 text-sm mb-1">
                     <span className="font-medium">Stok Payung:</span>{" "}
                     <span

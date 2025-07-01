@@ -1,6 +1,22 @@
 import { Umbrella, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-function Footer() {
+export default function Footer() {
+  const navigate = useNavigate();
+
+  const handleLinkClick = (e, href) => {
+    e.preventDefault();
+
+    const targetId = href.replace("#", "");
+    if (location.pathname !== "/") {
+      navigate(`/#${targetId}`);
+    } else {
+      const section = document.querySelector(href);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
   return (
     <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -19,27 +35,42 @@ function Footer() {
             <h3 className="text-lg font-semibold mb-4">Tautan Cepat</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#beranda" className="hover:text-[#60a5fa]">
+                <a
+                  href="#beranda"
+                  onClick={(e) => handleLinkClick(e, "#beranda")}
+                  className="hover:text-[#60a5fa]">
                   Beranda
                 </a>
               </li>
               <li>
-                <a href="#tata-cara" className="hover:text-[#60a5fa]">
+                <a
+                  href="#tata-cara"
+                  onClick={(e) => handleLinkClick(e, "#tata-cara")}
+                  className="hover:text-[#60a5fa]">
                   Tata cara
                 </a>
               </li>
               <li>
-                <a href="#lokasi" className="hover:text-[#60a5fa]">
-                  Lokasi
-                </a>
-              </li>
-              <li>
-                <a href="#biaya" className="hover:text-[#60a5fa]">
+                <a
+                  href="#biaya"
+                  onClick={(e) => handleLinkClick(e, "#biaya")}
+                  className="hover:text-[#60a5fa]">
                   Biaya
                 </a>
               </li>
               <li>
-                <a href="#faq" className="hover:text-[#60a5fa]">
+                <a
+                  href="#lokasi"
+                  onClick={(e) => handleLinkClick(e, "#lokasi")}
+                  className="hover:text-[#60a5fa]">
+                  Lokasi
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#faq"
+                  onClick={(e) => handleLinkClick(e, "#faq")}
+                  className="hover:text-[#60a5fa]">
                   FAQ
                 </a>
               </li>
@@ -61,11 +92,6 @@ function Footer() {
               <li>
                 <a href="javascript:void(0)" className="hover:text-[#60a5fa]">
                   Kebijakan Pengembalian
-                </a>
-              </li>
-              <li>
-                <a href="javascript:void(0)" className="hover:text-[#60a5fa]">
-                  FAQ
                 </a>
               </li>
             </ul>
@@ -98,5 +124,3 @@ function Footer() {
     </footer>
   );
 }
-
-export default Footer;

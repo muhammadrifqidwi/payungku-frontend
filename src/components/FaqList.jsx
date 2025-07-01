@@ -15,7 +15,7 @@ const faqData = [
   {
     question: "Berapa biaya sewa payung dan berapa lama durasinya?",
     answer:
-      "Biaya sewa payung adalah Rp15.000. Durasi peminjaman berlaku untuk **satu hari kalender yang sama**. Payung harus dikembalikan di hari yang sama sebelum pukul 23:59. Jika melewati batas waktu, Anda akan dianggap terlambat dan dapat dikenakan denda sesuai ketentuan hingga pemblokiran akun.",
+      "Biaya sewa payung adalah Rp12.000. Durasi peminjaman berlaku untuk **satu hari kalender yang sama**. Payung harus dikembalikan di hari yang sama sebelum pukul 18:00. Jika melewati batas waktu, Anda akan dianggap terlambat dan dapat dikenakan denda sesuai ketentuan.",
   },
   {
     question: "Bagaimana metode pembayaran yang tersedia di PayungKu?",
@@ -25,7 +25,7 @@ const faqData = [
   {
     question: "Bagaimana saya mendapatkan dan menggunakan kode sewa?",
     answer:
-      "Setelah Anda menyelesaikan pembayaran, sistem kami akan secara otomatis mengirimkan kode sewa unik ke nomor WhatsApp yang Anda daftarkan. Kode ini digunakan untuk membuka loker dan mengambil payung secara mandiri di lokasi penyewaan.",
+      "Setelah Anda menyelesaikan pembayaran, sistem kami akan secara otomatis menampilkan kode loker untuk pengambilan payung pada area tersebut. Kode ini digunakan untuk mengetahui loker dan mengambil payung secara mandiri di lokasi penyewaan.",
   },
   {
     question: "Apakah saya bisa mengembalikan payung di lokasi yang berbeda?",
@@ -46,7 +46,7 @@ const faqData = [
     question:
       "Bagaimana jika saya mengalami kendala saat meminjam atau membayar?",
     answer:
-      "Jika terjadi kendala saat menggunakan layanan (gagal bayar, kode tidak terkirim, atau kesalahan teknis), silakan hubungi tim dukungan kami melalui WhatsApp atau email yang tersedia di halaman Kontak. Tim kami siap membantu Anda secepat mungkin.",
+      "Jika terjadi kendala saat menggunakan layanan (gagal bayar, kode tidak terkirim, atau kesalahan teknis), silakan hubungi tim dukungan kami melalui email yang tersedia di halaman Kontak. Tim kami siap membantu Anda secepat mungkin.",
   },
 ];
 

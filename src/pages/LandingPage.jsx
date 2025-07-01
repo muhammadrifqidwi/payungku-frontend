@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import {
@@ -305,6 +306,7 @@ export default function LandingPage() {
   const [setNearestLoc] = useState(null);
   const [weather, setWeather] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
     axios
@@ -325,8 +327,8 @@ export default function LandingPage() {
   }, [currentPage, locations, itemsPerPage]);
 
   useEffect(() => {
-    const apiKey = "4bc92620502d40dc0e9b602ee7dd757e"; // Ganti dengan API key kamu
-    const lat = -6.595; // Koordinat Bogor
+    const apiKey = "4bc92620502d40dc0e9b602ee7dd757e";
+    const lat = -6.595;
     const lon = 106.816;
 
     axios
@@ -391,6 +393,19 @@ export default function LandingPage() {
 
     return pageNumbers;
   };
+
+  useEffect(() => {
+    const hash = location.hash;
+    if (hash) {
+      const target = document.querySelector(hash);
+      if (target) {
+        // Tunggu render selesai baru scroll
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    }
+  }, [location.hash]);
 
   const handleGetUserLocation = () => {
     if (!navigator.geolocation) {
@@ -582,6 +597,7 @@ export default function LandingPage() {
             initial={{ scale: 0.95, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2 }}
+            viewport={{ once: true, amount: 0.3 }}
             className="bg-white shadow-lg rounded-2xl p-6 sm:p-8 border border-blue-200 inline-block max-w-sm sm:max-w-none">
             <h3 className="text-lg sm:text-xl font-semibold text-blue-600 mb-2">
               Paket Harian

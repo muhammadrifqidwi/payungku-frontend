@@ -46,11 +46,19 @@ export default function Navbar() {
 
   const handleLinkClick = (e, href) => {
     e.preventDefault();
-    const section = document.querySelector(href);
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
     setIsMenuOpen(false);
+
+    const targetId = href.replace("#", "");
+    if (location.pathname !== "/") {
+      // Arahkan ke halaman landing dan tambahkan hash
+      navigate(`/#${targetId}`);
+    } else {
+      // Scroll ke section jika sudah di landing
+      const section = document.querySelector(href);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   // Deteksi klik di luar dropdown profil

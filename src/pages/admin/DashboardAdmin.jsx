@@ -8,6 +8,8 @@ import UserDetail from "../../components/admin/UserDetail";
 import LocationDetail from "../../components/admin/LocationDetail";
 import AddLocationForm from "../../components/admin/AddLocation";
 import { toast } from "sonner";
+// eslint-disable-next-line no-unused-vars
+import { motion } from "framer-motion";
 import {
   PieChart,
   Pie,
@@ -217,47 +219,38 @@ const DashboardAdmin = () => {
       let transactions = [];
       let locations = [];
 
-      // Fetch users first
+      // Fetch users
       try {
-        console.log("🔄 Fetching users...");
         const usersResponse = await api.get("/admin/users", { timeout: 30000 });
         users = usersResponse.data || [];
         setAllUsers(users);
-        console.log("✅ Users loaded:", users.length);
-      } catch (err) {
-        console.error("❌ Users failed:", err.message);
+      } catch {
         setAllUsers([]);
       }
 
       // Fetch transactions
       try {
-        console.log("🔄 Fetching transactions...");
         const transactionsResponse = await api.get("/admin/transactions", {
           timeout: 30000,
         });
         transactions = transactionsResponse.data || [];
         setAllTransactions(transactions);
-        console.log("✅ Transactions loaded:", transactions.length);
-      } catch (err) {
-        console.error("❌ Transactions failed:", err.message);
+      } catch {
         setAllTransactions([]);
       }
 
       // Fetch locations
       try {
-        console.log("🔄 Fetching locations...");
         const locationsResponse = await api.get("/locations", {
           timeout: 30000,
         });
         locations = locationsResponse.data || [];
         setLocations(locations);
-        console.log("✅ Locations loaded:", locations.length);
-      } catch (err) {
-        console.error("❌ Locations failed:", err.message);
+      } catch {
         setLocations([]);
       }
 
-      // Calculate stats from loaded data
+      // Calculate stats
       const totalUsers = users.filter(
         (u) => u.role === "user" || u.role === "peminjam"
       ).length;
@@ -270,7 +263,7 @@ const DashboardAdmin = () => {
         totalTransactions,
       });
 
-      // Check what failed
+      // Check for failed fetches
       const failedItems = [];
       if (users.length === 0) failedItems.push("users");
       if (transactions.length === 0) failedItems.push("transactions");
@@ -285,24 +278,12 @@ const DashboardAdmin = () => {
       } else {
         setError("");
       }
-    } catch (err) {
-      console.error("💥 Critical error in sequential fetch:", err);
+    } catch {
       setError("Gagal memuat data dashboard. Periksa koneksi internet Anda.");
     } finally {
       setIsLoading(false);
     }
   }, [token, navigate]);
-
-  // // Initial data fetch
-  // useEffect(() => {
-  //   fetchAllData();
-  // }, [fetchAllData]);
-
-  // // Retry function
-  // const retryFetch = useCallback(() => {
-  //   fetchAllData();
-  // }, [fetchAllData]);
-  // Updated retry function to use sequential fetching
 
   const retryFetch = useCallback(() => {
     console.log("🔄 Retrying with sequential fetch...");
@@ -570,75 +551,85 @@ const DashboardAdmin = () => {
 
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Overlay */}
           <div
-            className="fixed inset-0 bg-gray-600 bg-opacity-75"
-            onClick={() => setMobileMenuOpen(false)}></div>
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Sidebar dengan animasi slide-in */}
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="relative bg-white w-72 max-w-full h-full shadow-xl z-50">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-4 border-b">
+              <div className="flex items-center space-x-2">
+                <Umbrella className="text-blue-500 h-6 w-6" />
+                <span className="text-lg font-semibold text-gray-800">
+                  PayungKu
+                </span>
+              </div>
               <button
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                className="text-gray-500 hover:text-red-600 transition"
                 onClick={() => setMobileMenuOpen(false)}>
-                <span className="sr-only">Close sidebar</span>
-                <X className="h-6 w-6 text-white" />
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4">
-                <h1 className="text-xl font-bold text-blue-600 flex items-center">
-                  <Umbrella className="h-6 w-6 mr-2" />
-                  PayungKu
-                </h1>
-              </div>
-              <nav className="mt-5 px-2 space-y-1">
-                <SidebarLink
-                  icon={<Home />}
-                  text="Dashboard"
-                  active={activeTab === "dashboard"}
-                  onClick={() => {
-                    setActiveTab("dashboard");
-                    setMobileMenuOpen(false);
-                  }}
-                />
-                <SidebarLink
-                  icon={<Users />}
-                  text="Pengguna"
-                  active={activeTab === "users"}
-                  onClick={() => {
-                    setActiveTab("users");
-                    setMobileMenuOpen(false);
-                  }}
-                />
-                <SidebarLink
-                  icon={<ShoppingBag />}
-                  text="Transaksi"
-                  active={activeTab === "transactions"}
-                  onClick={() => {
-                    setActiveTab("transactions");
-                    setMobileMenuOpen(false);
-                  }}
-                />
-                <SidebarLink
-                  icon={<MapPin />}
-                  text="Lokasi"
-                  active={activeTab === "locations"}
-                  onClick={() => {
-                    setActiveTab("locations");
-                    setMobileMenuOpen(false);
-                  }}
-                />
-              </nav>
+
+            {/* Menu Items */}
+            <div className="flex flex-col py-4 px-3 space-y-2">
+              <SidebarLink
+                icon={<Home />}
+                text="Dashboard"
+                active={activeTab === "dashboard"}
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  setMobileMenuOpen(false);
+                }}
+              />
+              <SidebarLink
+                icon={<Users />}
+                text="Pengguna"
+                active={activeTab === "users"}
+                onClick={() => {
+                  setActiveTab("users");
+                  setMobileMenuOpen(false);
+                }}
+              />
+              <SidebarLink
+                icon={<ShoppingBag />}
+                text="Transaksi"
+                active={activeTab === "transactions"}
+                onClick={() => {
+                  setActiveTab("transactions");
+                  setMobileMenuOpen(false);
+                }}
+              />
+              <SidebarLink
+                icon={<MapPin />}
+                text="Lokasi"
+                active={activeTab === "locations"}
+                onClick={() => {
+                  setActiveTab("locations");
+                  setMobileMenuOpen(false);
+                }}
+              />
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+
+            {/* Logout */}
+            <div className="mt-auto px-4 py-4 border-t">
               <button
                 onClick={handleLogout}
-                className="flex items-center px-3 py-2 w-full text-red-600 hover:bg-red-50 rounded-md">
+                className="w-full flex items-center px-3 py-2 text-red-600 hover:bg-red-50 rounded-md">
                 <LogOut className="h-5 w-5 mr-3" />
                 <span className="text-sm font-medium">Keluar</span>
               </button>
             </div>
-          </div>
-          <div className="flex-shrink-0 w-14"></div>
+          </motion.div>
         </div>
       )}
 

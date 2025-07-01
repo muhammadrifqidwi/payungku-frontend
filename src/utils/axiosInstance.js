@@ -88,11 +88,3 @@ export const apiWithTimeout = (timeout) => {
     timeout,
   });
 };
-
-// Specific API calls dengan timeout yang disesuaikan
-export const dashboardAPI = {
-  getUsers: () => api.get("/admin/users", { timeout: 30000 }),
-  getTransactions: () => api.get("/admin/transactions", { timeout: 30000 }),
-  getLocations: () => api.get("/admin/locations", { timeout: 30000 }),
-  getDashboard: () => api.get("/admin/dashboard/data", { timeout: 30000 }),
-};
