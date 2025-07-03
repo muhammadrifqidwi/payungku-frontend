@@ -17,7 +17,7 @@ api.interceptors.request.use(
     }
 
     // Log request untuk debugging
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    // console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
     return config;
   },
@@ -30,11 +30,11 @@ api.interceptors.request.use(
 // Response interceptor dengan retry logic
 api.interceptors.response.use(
   (response) => {
-    console.log(
-      `API Response: ${response.config.method?.toUpperCase()} ${
-        response.config.url
-      } - ${response.status}`
-    );
+    // console.log(
+    //   `API Response: ${response.config.method?.toUpperCase()} ${
+    //     response.config.url
+    //   } - ${response.status}`
+    // );
     return response;
   },
   async (error) => {
@@ -64,8 +64,6 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-
-      console.log(`Retrying request... Attempt ${originalRequest._retryCount}`);
 
       // Wait before retry
       await new Promise((resolve) =>

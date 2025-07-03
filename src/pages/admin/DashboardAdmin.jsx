@@ -29,6 +29,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+// Import komponen DashboardStats yang baru:
+// Hapus baris ini:
+// import DashboardStats from "../../components/admin/DashboardStats"
+
 import {
   Users,
   UserIcon,
@@ -46,6 +50,7 @@ import {
   PlusCircle,
   Eye,
   Trash2,
+  RotateCw,
 } from "lucide-react";
 
 const SidebarLink = ({ icon, text, active, onClick, collapsed = false }) => {
@@ -66,6 +71,86 @@ const SidebarLink = ({ icon, text, active, onClick, collapsed = false }) => {
   );
 };
 
+// Dashboard Stats Component - Integrated
+const DashboardStats = ({ stats, locations, isLoading }) => {
+  // Fallback values with validation
+  const safeStats = {
+    totalUsers: Math.max(0, stats?.totalUsers || 0),
+    totalAdmins: Math.max(0, stats?.totalAdmins || 0),
+    totalTransactions: Math.max(0, stats?.totalTransactions || 0),
+    totalLocations: Math.max(0, locations?.length || 0),
+  };
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-12 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-20"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-4">
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Pengguna</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-4xl font-bold">{safeStats.totalUsers}</div>
+          <p className="text-xs text-muted-foreground">Pengguna terdaftar</p>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Admin</CardTitle>
+          <UserIcon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-4xl font-bold">{safeStats.totalAdmins}</div>
+          <p className="text-xs text-muted-foreground">Administrator aktif</p>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
+          <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-4xl font-bold">
+            {safeStats.totalTransactions}
+          </div>
+          <p className="text-xs text-muted-foreground">Semua transaksi</p>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Lokasi</CardTitle>
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-4xl font-bold">{safeStats.totalLocations}</div>
+          <p className="text-xs text-muted-foreground">Lokasi tersedia</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const COLORS = ["#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 const DashboardAdmin = () => {
@@ -73,7 +158,7 @@ const DashboardAdmin = () => {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("ringkasan");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locations, setLocations] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -90,7 +175,7 @@ const DashboardAdmin = () => {
 
   const token = useMemo(() => localStorage.getItem("token"), []);
 
-  // Unified data fetching function
+  // Ganti fetchAllData dengan implementasi baru
   const fetchAllData = useCallback(async () => {
     if (!token) {
       setError("Token tidak ditemukan. Silakan login kembali.");
@@ -133,7 +218,6 @@ const DashboardAdmin = () => {
       if (usersRes.status === "fulfilled") {
         const users = usersRes.value.data || [];
         setAllUsers(users);
-
         // Update stats from actual user data if dashboard failed
         if (dashboardRes.status === "rejected") {
           setStats((prev) => ({
@@ -153,7 +237,6 @@ const DashboardAdmin = () => {
       if (transactionsRes.status === "fulfilled") {
         const transactions = transactionsRes.value.data || [];
         setAllTransactions(transactions);
-
         // Update stats from actual transaction data if dashboard failed
         if (dashboardRes.status === "rejected") {
           setStats((prev) => ({
@@ -188,7 +271,6 @@ const DashboardAdmin = () => {
         setError(
           `${failedCount} dari 4 data gagal dimuat. Beberapa fitur mungkin terbatas.`
         );
-
         // Log specific errors for debugging
         failedRequests.forEach((req, index) => {
           const endpoints = ["dashboard", "users", "transactions", "locations"];
@@ -285,31 +367,29 @@ const DashboardAdmin = () => {
     }
   }, [token, navigate]);
 
+  // Ganti retryFetch function
   const retryFetch = useCallback(() => {
-    console.log("🔄 Retrying with sequential fetch...");
     fetchDataSequentially();
   }, [fetchDataSequentially]);
 
-  // Initial data fetch with fallback
+  // Ganti useEffect untuk initial data fetch
   useEffect(() => {
     const loadData = async () => {
       try {
         await fetchDataSequentially();
       } catch {
-        console.log("🔄 Parallel fetch failed, trying sequential...");
         await fetchDataSequentially();
       }
     };
 
     loadData();
-  }, [fetchAllData, fetchDataSequentially]);
+  }, [fetchDataSequentially]);
 
   const handleDeleteLocation = async (id) => {
     if (window.confirm("Yakin ingin menghapus lokasi ini?")) {
       try {
         await api.delete(`/admin/locations/${id}`);
         toast.success("Lokasi berhasil dihapus");
-        // Refresh only locations data
         const response = await api.get("/admin/locations");
         setLocations(response.data);
       } catch (err) {
@@ -342,7 +422,6 @@ const DashboardAdmin = () => {
     try {
       await api.delete(`/admin/transactions/${id}`);
       toast.success("Transaksi berhasil dihapus");
-      // Update local state instead of refetching all data
       setAllTransactions((prev) => prev.filter((trx) => trx._id !== id));
     } catch (err) {
       console.error("Gagal menghapus transaksi:", err);
@@ -356,7 +435,6 @@ const DashboardAdmin = () => {
     try {
       await api.delete(`/admin/users/${userId}`);
       toast.success("Pengguna berhasil dihapus");
-      // Update local state instead of refetching all data
       setAllUsers((prev) => prev.filter((user) => user._id !== userId));
     } catch (error) {
       console.error("Gagal menghapus pengguna:", error);
@@ -364,28 +442,88 @@ const DashboardAdmin = () => {
     }
   };
 
+  // Fixed popular locations function - now properly updates with latest transactions
   const getPopularLocations = () => {
-    const countMap = allTransactions
-      .filter(
-        (trx) =>
-          trx.status === "returned" || (trx.status === "active" && trx.location)
-      )
-      .reduce((acc, trx) => {
-        const locId =
-          typeof trx.location === "object" ? trx.location._id : trx.location;
-        const locName =
-          typeof trx.location === "object" ? trx.location.name : trx.location;
-        if (!acc[locId]) {
-          acc[locId] = { count: 1, name: locName };
-        } else {
-          acc[locId].count++;
-        }
-        return acc;
-      }, {});
+    if (!allTransactions.length) {
+      return [];
+    }
 
-    return Object.entries(countMap)
-      .sort((a, b) => b[1].count - a[1].count)
+    // Create a more accurate location count map
+    const locationCounts = new Map();
+
+    // Process transactions - only count completed/active ones
+    allTransactions
+      .filter((trx) => {
+        const hasLocation =
+          trx.location &&
+          (typeof trx.location === "object" ? trx.location._id : trx.location);
+        const validStatus = ["returned", "active", "completed"].includes(
+          trx.status
+        );
+        return hasLocation && validStatus;
+      })
+      .forEach((trx) => {
+        const locationId =
+          typeof trx.location === "object" ? trx.location._id : trx.location;
+        const locationName =
+          typeof trx.location === "object"
+            ? trx.location.name
+            : locations.find((loc) => loc._id === locationId)?.name ||
+              `Location ${locationId}`;
+
+        if (locationId) {
+          const existing = locationCounts.get(locationId);
+          if (existing) {
+            existing.count++;
+            // Update with latest transaction if newer
+            if (new Date(trx.createdAt) > new Date(existing.lastTransaction)) {
+              existing.lastTransaction = trx.createdAt;
+            }
+          } else {
+            locationCounts.set(locationId, {
+              id: locationId,
+              name: locationName,
+              count: 1,
+              lastTransaction: trx.createdAt,
+            });
+          }
+        }
+      });
+
+    // Convert to array and sort
+    const result = Array.from(locationCounts.values())
+      .sort((a, b) => {
+        // Primary sort: by count (descending)
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+        // Secondary sort: by latest transaction (descending)
+        return new Date(b.lastTransaction) - new Date(a.lastTransaction);
+      })
       .slice(0, 5);
+
+    return result;
+  };
+
+  // Get 5 locations with lowest stock
+  const getLowestStockLocations = () => {
+    if (!locations.length) {
+      return [];
+    }
+
+    const result = [...locations]
+      .filter((loc) => typeof loc.stock === "number") // Ensure stock is a number
+      .sort((a, b) => {
+        // Primary sort: by stock (ascending)
+        if (a.stock !== b.stock) {
+          return a.stock - b.stock;
+        }
+        // Secondary sort: by name (alphabetical)
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 5);
+
+    return result;
   };
 
   const getStatusColor = (status) => {
@@ -451,7 +589,7 @@ const DashboardAdmin = () => {
     );
   }
 
-  // Critical error state (no data at all)
+  // Critical error state
   if (!stats && error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -515,9 +653,9 @@ const DashboardAdmin = () => {
         <nav className="flex-1 px-2 py-4 space-y-1">
           <SidebarLink
             icon={<Home />}
-            text="Dashboard"
-            active={activeTab === "dashboard"}
-            onClick={() => setActiveTab("dashboard")}
+            text="Ringkasan"
+            active={activeTab === "ringkasan"}
+            onClick={() => setActiveTab("ringkasan")}
           />
           <SidebarLink
             icon={<Users />}
@@ -552,20 +690,17 @@ const DashboardAdmin = () => {
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          {/* Sidebar dengan animasi slide-in */}
           <motion.div
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="relative bg-white w-72 max-w-full h-full shadow-xl z-50">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-4 border-b">
               <div className="flex items-center space-x-2">
                 <Umbrella className="text-blue-500 h-6 w-6" />
@@ -580,14 +715,13 @@ const DashboardAdmin = () => {
               </button>
             </div>
 
-            {/* Menu Items */}
             <div className="flex flex-col py-4 px-3 space-y-2">
               <SidebarLink
                 icon={<Home />}
-                text="Dashboard"
-                active={activeTab === "dashboard"}
+                text="Ringkasan"
+                active={activeTab === "ringkasan"}
                 onClick={() => {
-                  setActiveTab("dashboard");
+                  setActiveTab("ringkasan");
                   setMobileMenuOpen(false);
                 }}
               />
@@ -620,7 +754,6 @@ const DashboardAdmin = () => {
               />
             </div>
 
-            {/* Logout */}
             <div className="mt-auto px-4 py-4 border-t">
               <button
                 onClick={handleLogout}
@@ -645,12 +778,13 @@ const DashboardAdmin = () => {
                 <Menu className="h-6 w-6" />
               </button>
               <h1 className="ml-2 md:ml-0 text-xl font-bold text-gray-800">
-                {activeTab === "dashboard" && "Dashboard"}
+                {activeTab === "ringkasan" && "Ringkasan Statistik"}
                 {activeTab === "users" && "Manajemen Pengguna"}
-                {activeTab === "transactions" && "Transaksi"}
-                {activeTab === "locations" && "Lokasi"}
+                {activeTab === "transactions" && "Manajemen Transaksi"}
+                {activeTab === "locations" && "Manajemen Lokasi"}
               </h1>
             </div>
+            {/* Tambahkan refresh button di header untuk debugging: */}
             <div className="flex items-center space-x-4">
               <div className="relative hidden md:block">
                 <button
@@ -660,6 +794,16 @@ const DashboardAdmin = () => {
                   Beranda
                 </button>
               </div>
+              {/* Debug refresh button */}
+              <button
+                onClick={retryFetch}
+                disabled={isLoading}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition disabled:opacity-50"
+                title="Refresh data">
+                <RotateCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
+              </button>
               <button
                 onClick={() => navigate("/profile")}
                 className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-medium">
@@ -671,77 +815,15 @@ const DashboardAdmin = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50">
-          {/* Dashboard Tab */}
-          {activeTab === "dashboard" && (
+          {/* Ringkasan Tab */}
+          {activeTab === "ringkasan" && (
             <section className="w-full space-y-6">
-              {/* Summary Cards */}
-              <div className="grid gap-6 lg:grid-cols-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Pengguna
-                    </CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {stats?.totalUsers ?? 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Pengguna terdaftar
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Admin
-                    </CardTitle>
-                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {stats?.totalAdmins ?? 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Administrator aktif
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Transaksi
-                    </CardTitle>
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {stats?.totalTransactions ?? 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Semua transaksi
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Lokasi
-                    </CardTitle>
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{locations.length}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Lokasi tersedia
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Summary Cards - Using separate component for better accuracy */}
+              <DashboardStats
+                stats={stats}
+                locations={locations}
+                isLoading={isLoading}
+              />
 
               {/* Analytics Cards */}
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
@@ -829,18 +911,20 @@ const DashboardAdmin = () => {
                   </CardContent>
                 </Card>
 
-                {/* Lokasi Terpopuler */}
+                {/* Lokasi Terpopuler - Fixed to update with latest transactions */}
                 <Card className="h-full">
                   <CardHeader>
                     <CardTitle>Lokasi Terpopuler</CardTitle>
                     <CardDescription>
-                      5 lokasi terbanyak dipinjam
+                      5 lokasi terbanyak dipinjam (terbaru)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {getPopularLocations().map(([id, loc], index) => (
-                        <div key={id} className="flex items-center space-x-4">
+                      {getPopularLocations().map((loc, index) => (
+                        <div
+                          key={loc.id}
+                          className="flex items-center space-x-4">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-medium">
                             {index + 1}
                           </div>
@@ -867,21 +951,30 @@ const DashboardAdmin = () => {
                   </CardContent>
                 </Card>
 
-                {/* Status Lokasi */}
+                {/* 5 Lokasi Stok Terendah - Replaced status lokasi */}
                 <Card className="h-full">
                   <CardHeader>
-                    <CardTitle>Status Lokasi</CardTitle>
+                    <CardTitle>Stok Payung Terendah</CardTitle>
                     <CardDescription>
-                      Ketersediaan stok tiap lokasi
+                      5 lokasi dengan stok paling sedikit
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {locations.slice(0, 5).map((loc) => (
+                      {getLowestStockLocations().map((loc) => (
                         <div
                           key={loc._id}
                           className="flex items-center space-x-4">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
+                          <div
+                            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                              loc.stock === 0
+                                ? "bg-red-100 text-red-600"
+                                : loc.stock <= 2
+                                ? "bg-orange-100 text-orange-600"
+                                : loc.stock <= 5
+                                ? "bg-yellow-100 text-yellow-600"
+                                : "bg-green-100 text-green-600"
+                            }`}>
                             <MapPin className="h-4 w-4" />
                           </div>
                           <div className="flex-1 space-y-1">
@@ -895,21 +988,34 @@ const DashboardAdmin = () => {
                           <div className="flex flex-col items-end space-y-1">
                             <Badge
                               variant={
-                                loc.stock > 5
-                                  ? "default"
-                                  : loc.stock > 0
+                                loc.stock === 0
+                                  ? "destructive"
+                                  : loc.stock <= 2
                                   ? "secondary"
-                                  : "destructive"
+                                  : loc.stock <= 5
+                                  ? "outline"
+                                  : "default"
                               }
                               className="text-xs">
                               {loc.stock} stok
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {loc.stock > 5
-                                ? "Tersedia"
-                                : loc.stock > 0
-                                ? "Terbatas"
-                                : "Kosong"}
+                            <span
+                              className={`text-xs ${
+                                loc.stock === 0
+                                  ? "text-red-600"
+                                  : loc.stock <= 2
+                                  ? "text-orange-600"
+                                  : loc.stock <= 5
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                              }`}>
+                              {loc.stock === 0
+                                ? "Kosong"
+                                : loc.stock <= 2
+                                ? "Kritis"
+                                : loc.stock <= 5
+                                ? "Rendah"
+                                : "Aman"}
                             </span>
                           </div>
                         </div>
@@ -1239,7 +1345,7 @@ const DashboardAdmin = () => {
               onClose={() => setShowAddLocation(false)}
               onLocationAdded={() => {
                 setShowAddLocation(false);
-                fetchAllData(); // Refresh all data after adding location
+                fetchAllData();
               }}
             />
           )}
@@ -1313,16 +1419,18 @@ const DashboardAdmin = () => {
                               : "Kosong"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center space-x-2">
+                        <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => setSelectedLocation(location)}
-                            className="text-sm text-blue-600 hover:underline">
-                            Detail
+                            className="p-1 rounded-full hover:bg-blue-50 text-blue-600"
+                            title="Lihat Detail">
+                            <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteLocation(location._id)}
-                            className="text-sm text-red-600 hover:underline">
-                            Hapus
+                            className="p-1 rounded-full hover:bg-red-50 text-red-600"
+                            title="Hapus Lokasi">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
