@@ -13,6 +13,8 @@ import {
   EyeOff,
   ArrowRight,
   ArrowLeft,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -22,9 +24,15 @@ import { toast } from "sonner";
 // Skema validasi Zod
 const schema = z
   .object({
-    name: z.string().min(1, "Nama wajib diisi"),
+    name: z
+      .string()
+      .min(1, "Nama wajib diisi")
+      .min(2, "Nama minimal 2 karakter"),
     email: z.string().email("Email tidak valid"),
-    phone: z.string().min(8, "Nomor telepon wajib diisi"),
+    phone: z
+      .string()
+      .min(8, "Nomor telepon minimal 8 digit")
+      .regex(/^[0-9]+$/, "Nomor telepon hanya boleh berisi angka"),
     password: z.string().min(6, "Password minimal 6 karakter"),
     confirmPassword: z.string(),
   })
@@ -33,18 +41,64 @@ const schema = z
     message: "Konfirmasi password tidak cocok",
   });
 
+// Simplified password strength checker
+const getPasswordStrength = (password) => {
+  if (!password) return { strength: 0, label: "", color: "" };
+
+  const length = password.length;
+  let strength = 0;
+  let label = "";
+  let color = "";
+
+  if (length >= 6 && length < 8) {
+    strength = 1;
+    label = "Cukup";
+    color = "text-yellow-600 bg-yellow-50 border-yellow-200";
+  } else if (length >= 8 && length < 12) {
+    strength = 2;
+    label = "Baik";
+    color = "text-green-600 bg-green-50 border-green-200";
+  } else if (length >= 12) {
+    strength = 3;
+    label = "Sangat Baik";
+    color = "text-green-700 bg-green-50 border-green-200";
+  } else {
+    strength = 0;
+    label = "Terlalu Pendek";
+    color = "text-red-500 bg-red-50 border-red-200";
+  }
+
+  return { strength, label, color };
+};
+
 export default function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    strength: 0,
+    label: "",
+    color: "",
+  });
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] =
+    useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    watch,
+    formState: { errors, isSubmitting, isValid, touchedFields },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange",
   });
+
+  const watchedPassword = watch("password", "");
+  const watchedConfirmPassword = watch("confirmPassword", "");
+  const watchedName = watch("name", "");
+  const watchedEmail = watch("email", "");
+  const watchedPhone = watch("phone", "");
 
   const onSubmit = async (data) => {
     try {
@@ -66,6 +120,20 @@ export default function Register() {
       console.error(err);
       toast.error(err.response?.data?.message || "Registrasi gagal.");
     }
+  };
+
+  // Helper function untuk menampilkan status validasi field
+  const getFieldStatus = (fieldName, value) => {
+    if (!touchedFields[fieldName]) return null;
+    if (errors[fieldName]) return "error";
+    if (value && value.length > 0) return "success";
+    return null;
+  };
+
+  // Handle password input change
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPasswordStrength(getPasswordStrength(value));
   };
 
   return (
@@ -124,13 +192,28 @@ export default function Register() {
                     type="text"
                     id="name"
                     {...register("name")}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    className={`w-full pl-12 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      getFieldStatus("name", watchedName) === "error"
+                        ? "border-red-300 focus:border-red-500"
+                        : getFieldStatus("name", watchedName) === "success"
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="Masukkan nama lengkap"
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  {getFieldStatus("name", watchedName) === "success" && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 h-5 w-5" />
+                  )}
+                  {getFieldStatus("name", watchedName) === "error" && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                  )}
                 </div>
                 {errors.name && (
-                  <p className="text-red-500 text-sm">{errors.name.message}</p>
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
 
@@ -146,13 +229,28 @@ export default function Register() {
                     type="email"
                     id="email"
                     {...register("email")}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    className={`w-full pl-12 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      getFieldStatus("email", watchedEmail) === "error"
+                        ? "border-red-300 focus:border-red-500"
+                        : getFieldStatus("email", watchedEmail) === "success"
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="email@example.com"
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  {getFieldStatus("email", watchedEmail) === "success" && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 h-5 w-5" />
+                  )}
+                  {getFieldStatus("email", watchedEmail) === "error" && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                  )}
                 </div>
                 {errors.email && (
-                  <p className="text-red-500 text-sm">{errors.email.message}</p>
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -168,13 +266,28 @@ export default function Register() {
                     type="text"
                     id="phone"
                     {...register("phone")}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    className={`w-full pl-12 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      getFieldStatus("phone", watchedPhone) === "error"
+                        ? "border-red-300 focus:border-red-500"
+                        : getFieldStatus("phone", watchedPhone) === "success"
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="081234567890"
                   />
                   <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  {getFieldStatus("phone", watchedPhone) === "success" && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 h-5 w-5" />
+                  )}
+                  {getFieldStatus("phone", watchedPhone) === "error" && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                  )}
                 </div>
                 {errors.phone && (
-                  <p className="text-red-500 text-sm">{errors.phone.message}</p>
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.phone.message}
+                  </p>
                 )}
               </div>
 
@@ -190,7 +303,19 @@ export default function Register() {
                     type={showPassword ? "text" : "password"}
                     id="password"
                     {...register("password")}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    onFocus={() => setIsPasswordFocused(true)}
+                    onBlur={() => setIsPasswordFocused(false)}
+                    onChange={(e) => {
+                      handlePasswordChange(e);
+                      register("password").onChange(e);
+                    }}
+                    className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      errors.password
+                        ? "border-red-300 focus:border-red-500"
+                        : watchedPassword && passwordStrength.strength >= 1
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="Minimal 6 karakter"
                   />
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -205,8 +330,32 @@ export default function Register() {
                     )}
                   </button>
                 </div>
+
+                {/* Simplified Password Strength - Show only when focused or has content */}
+                {(isPasswordFocused || watchedPassword) && watchedPassword && (
+                  <div
+                    className={`border rounded-lg p-3 transition-all duration-300 ${passwordStrength.color}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Kekuatan Password:</span>
+                      <span className="text-sm font-semibold">
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+
+                    {/* Simple tip */}
+                    <p className="text-xs text-gray-600 mt-2">
+                      {watchedPassword.length < 6
+                        ? "Minimal 6 karakter diperlukan"
+                        : watchedPassword.length < 8
+                        ? "Gunakan 8+ karakter untuk keamanan lebih baik"
+                        : "Password sudah aman!"}
+                    </p>
+                  </div>
+                )}
+
                 {errors.password && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
                     {errors.password.message}
                   </p>
                 )}
@@ -224,23 +373,71 @@ export default function Register() {
                     type={showConfirmPassword ? "text" : "password"}
                     id="confirmPassword"
                     {...register("confirmPassword")}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    onFocus={() => setIsConfirmPasswordFocused(true)}
+                    onBlur={() => setIsConfirmPasswordFocused(false)}
+                    className={`w-full pl-12 pr-16 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      errors.confirmPassword
+                        ? "border-red-300 focus:border-red-500"
+                        : watchedConfirmPassword &&
+                          watchedPassword === watchedConfirmPassword
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="Ulangi password"
                   />
+
+                  {/* Icon Lock */}
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+
+                  {/* Tombol Show/Hide Password */}
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 z-10">
                     {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5" />
                     ) : (
                       <Eye className="h-5 w-5" />
                     )}
                   </button>
+
+                  {/* Validasi password cocok/tidak */}
+                  {watchedConfirmPassword &&
+                    (watchedPassword === watchedConfirmPassword ? (
+                      <CheckCircle className="absolute right-10 top-1/2 transform -translate-y-1/2 text-green-500 h-5 w-5" />
+                    ) : (
+                      <AlertCircle className="absolute right-10 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                    ))}
                 </div>
+
+                {/* Confirm Password Status - Show when focused or has content */}
+                {(isConfirmPasswordFocused || watchedConfirmPassword) &&
+                  watchedPassword && (
+                    <div
+                      className={`p-3 rounded-lg border transition-all duration-300 ${
+                        watchedConfirmPassword === watchedPassword
+                          ? "bg-green-50 border-green-200 text-green-700"
+                          : "bg-red-50 border-red-200 text-red-700"
+                      }`}>
+                      <div className="flex items-center gap-2 text-sm">
+                        {watchedConfirmPassword === watchedPassword ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Password cocok</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <span>Password tidak cocok</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                 {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
                     {errors.confirmPassword.message}
                   </p>
                 )}
@@ -249,8 +446,12 @@ export default function Register() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                disabled={isSubmitting || !isValid}
+                className={`w-full font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform transition-all duration-200 ${
+                  isSubmitting || !isValid
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02]"
+                }`}>
                 <div className="flex items-center justify-center gap-2">
                   {isSubmitting ? (
                     <>

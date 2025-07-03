@@ -22,7 +22,6 @@ import {
   ChevronRight,
   ArrowLeft,
   Navigation,
-  Info,
   X,
 } from "lucide-react";
 
@@ -87,7 +86,7 @@ export default function TransactionPage() {
       );
 
       if (active) {
-        setActiveTransaction(active); // simpan transaksi aktif
+        setActiveTransaction(active);
         setRentCode(active.rentCode || "");
         setReturnLocationId(active.location?._id || "");
         localStorage.setItem("returnLocationId", active.location?._id || "");
@@ -100,11 +99,7 @@ export default function TransactionPage() {
       }
     } catch (err) {
       console.error("❌ Gagal mengambil transaksi:", err);
-      setAlert({
-        show: true,
-        type: "error",
-        message: "Gagal memuat riwayat transaksi",
-      });
+      toast.error("Gagal memuat riwayat transaksi");
     }
   }, []);
 
@@ -121,7 +116,7 @@ export default function TransactionPage() {
       }
     } catch (err) {
       console.error("Gagal mengambil lokasi:", err);
-      setAlert({ show: true, type: "error", message: "Gagal memuat lokasi." });
+      toast.error("Gagal memuat lokasi");
       setFetching(false);
     }
   };
@@ -149,22 +144,6 @@ export default function TransactionPage() {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
-
-      locations.forEach((loc) => {
-        const marker = L.marker([loc.latitude, loc.longitude])
-          .addTo(map)
-          .bindPopup(
-            `
-            <strong>${loc.name}</strong><br>
-            Stok: <span style="color: ${loc.stock > 0 ? "green" : "red"}">${
-              loc.stock
-            } payung</span>
-          `
-          )
-          .on("click", () => setLocId(loc._id));
-
-        markers.current[loc._id] = marker;
-      });
 
       locations.forEach((loc) => {
         const marker = L.marker([loc.latitude, loc.longitude])
@@ -262,30 +241,27 @@ export default function TransactionPage() {
     } else {
       setRentCode("");
     }
-
-    if (active) {
-      setRentCode(active.rentCode);
-      localStorage.setItem("returnLocationId", active.location._id);
-    } else {
-      setRentCode("");
-    }
   }, [transactions]);
 
   const handlePinjam = async () => {
-    if (!selected) {
-      return setAlert({
+    if (!userLocation) {
+      setAlert({
         show: true,
-        type: "error",
-        message: "Silakan pilih lokasi terlebih dahulu",
+        type: "warning",
+        message:
+          "Silakan deteksi lokasi Anda terlebih dahulu sebelum meminjam payung",
       });
+      return;
+    }
+
+    if (!selected) {
+      toast.error("Silakan pilih lokasi terlebih dahulu");
+      return;
     }
 
     if (selected.stock <= 0) {
-      return setAlert({
-        show: true,
-        type: "error",
-        message: "Stok habis di lokasi ini",
-      });
+      toast.error("Stok habis di lokasi ini");
+      return;
     }
 
     setIsProcessing(true);
@@ -316,7 +292,7 @@ export default function TransactionPage() {
                 locationId: selected._id,
                 orderId,
                 totalPayment,
-                paymentResult: { ...result, snapToken }, // optional: kirim info pembayaran
+                paymentResult: { ...result, snapToken },
               },
               {
                 headers: { Authorization: `Bearer ${userToken}` },
@@ -327,47 +303,29 @@ export default function TransactionPage() {
             await fetchTransactions();
             await fetchLocations();
 
-            setAlert({
-              show: true,
-              type: "success",
-              message: `Pembayaran berhasil. Ambil payung di loker: ${confirmRes.data.lockerCode}`,
-            });
+            toast.success(
+              `Pembayaran berhasil! Ambil payung di loker: ${confirmRes.data.lockerCode}`
+            );
           } catch (e) {
             console.error(e);
-            setAlert({
-              show: true,
-              type: "error",
-              message: "Terjadi kesalahan saat menyimpan transaksi.",
-            });
+            toast.error("Terjadi kesalahan saat menyimpan transaksi");
           } finally {
             setIsProcessing(false);
           }
         },
 
         onPending: () => {
-          setAlert({
-            show: true,
-            type: "warning",
-            message: "Pembayaran masih diproses. Silakan cek kembali nanti.",
-          });
+          toast.warning("Pembayaran masih diproses. Silakan cek kembali nanti");
           setIsProcessing(false);
         },
 
         onError: () => {
-          setAlert({
-            show: true,
-            type: "error",
-            message: toast.error("Pembayaran gagal."),
-          });
+          toast.error("Pembayaran gagal");
           setIsProcessing(false);
         },
 
         onClose: async () => {
-          setAlert({
-            show: true,
-            type: "warning",
-            message: toast.warning("Popup ditutup. Transaksi dibatalkan."),
-          });
+          toast.warning("Popup ditutup. Transaksi dibatalkan");
           setIsProcessing(false);
           await fetchTransactions();
           await fetchLocations();
@@ -375,11 +333,7 @@ export default function TransactionPage() {
       });
     } catch (err) {
       console.error(err);
-      setAlert({
-        show: true,
-        type: "error",
-        message: toast.error("Gagal memulai transaksi."),
-      });
+      toast.error("Gagal memulai transaksi");
       setIsProcessing(false);
     }
   };
@@ -442,18 +396,11 @@ export default function TransactionPage() {
 
   const detectUserLocation = () => {
     if (!navigator.geolocation) {
-      return setAlert({
-        show: true,
-        type: "error",
-        message: "Geolocation tidak didukung oleh browser Anda",
-      });
+      toast.error("Geolocation tidak didukung oleh browser Anda");
+      return;
     }
 
-    setAlert({
-      show: true,
-      type: "info",
-      message: toast.warning("Mencari lokasi Anda..."),
-    });
+    const loadingToast = toast.loading("Mencari lokasi Anda...");
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -499,22 +446,29 @@ export default function TransactionPage() {
           }
         }
 
+        // Dismiss loading toast dan tampilkan success
+        toast.dismiss(loadingToast);
+        toast.success(
+          `Lokasi terdekat: ${nearestLoc.name} (${(
+            nearestLoc.dist * 111
+          ).toFixed(2)} km)`
+        );
+
+        // Set alert untuk ditampilkan di bawah peta
         setAlert({
           show: true,
           type: "success",
-          message: `Lokasi terdekat: ${nearestLoc.name} (${(
-            nearestLoc.dist * 111
-          ).toFixed(2)} km)`,
+          message: `✅ Lokasi Anda berhasil terdeteksi! Lokasi terdekat: ${
+            nearestLoc.name
+          } (${(nearestLoc.dist * 111).toFixed(2)} km)`,
         });
 
         setLocId(nearestLoc._id);
       },
       (err) => {
-        setAlert({
-          show: true,
-          type: "error",
-          message: "Gagal mendapatkan lokasi pengguna. " + err.message,
-        });
+        // Dismiss loading toast dan tampilkan error
+        toast.dismiss(loadingToast);
+        toast.error(`Gagal mendapatkan lokasi: ${err.message}`);
         console.error(err);
       }
     );
@@ -590,38 +544,6 @@ export default function TransactionPage() {
           </div>
         </div>
       </div>
-
-      {/* Alert */}
-      {alert.show && (
-        <div
-          className={`mb-6 p-4 rounded-lg border shadow-md flex items-start ${
-            alert.type === "success"
-              ? "bg-green-50 border-green-200 text-green-800"
-              : alert.type === "error"
-              ? "bg-red-50 border-red-200 text-red-800"
-              : alert.type === "warning"
-              ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-              : "bg-blue-50 border-blue-200 text-blue-800"
-          }`}>
-          <div className="flex-shrink-0 mr-3">
-            {alert.type === "success" ? (
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            ) : alert.type === "error" ? (
-              <AlertCircle className="h-5 w-5 text-red-500" />
-            ) : alert.type === "warning" ? (
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <Info className="h-5 w-5 text-blue-500" />
-            )}
-          </div>
-          <div className="flex-1">{alert.message}</div>
-          <button
-            onClick={() => setAlert({ show: false, type: "", message: "" })}
-            className="ml-auto text-gray-500 hover:text-gray-700">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="space-y-6">
@@ -753,6 +675,71 @@ export default function TransactionPage() {
                   </div>
                 )}
 
+                {/* Location Success Alert - Tampil setelah deteksi lokasi berhasil */}
+                {alert.show && alert.type === "success" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-md flex items-start">
+                    <div className="flex-shrink-0 mr-3">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-green-800 font-medium">
+                        {alert.message}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setAlert({ show: false, type: "", message: "" })
+                      }
+                      className="ml-auto text-green-500 hover:text-green-700">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Warning Alert - Untuk peringatan deteksi lokasi */}
+                {alert.show && alert.type === "warning" && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-md flex items-start">
+                    <div className="flex-shrink-0 mr-3">
+                      <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-yellow-800 font-medium">
+                        {alert.message}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setAlert({ show: false, type: "", message: "" })
+                      }
+                      className="ml-auto text-yellow-500 hover:text-yellow-700">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Locker Code Display */}
+                {lockerCode && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-3">
+                      <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
+                      <h4 className="text-lg font-semibold text-green-800">
+                        Peminjaman Berhasil!
+                      </h4>
+                    </div>
+                    <p className="text-green-700 mb-4">
+                      Silakan ambil payung Anda di loker dengan kode:
+                    </p>
+                    <div className="bg-white inline-block px-8 py-4 rounded-xl border-2 border-green-300 shadow-lg">
+                      <div className="text-4xl font-bold text-green-700 tracking-wider">
+                        {lockerCode}
+                      </div>
+                    </div>
+                    <p className="text-sm text-green-600 mt-4">
+                      Simpan kode ini dengan baik untuk mengambil payung Anda
+                    </p>
+                  </div>
+                )}
+
                 {/* Tombol Pinjam */}
                 <button
                   onClick={handlePinjam}
@@ -774,16 +761,6 @@ export default function TransactionPage() {
                     </>
                   )}
                 </button>
-                {lockerCode && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <h4 className="font-medium text-green-800 mb-2">
-                      Kode Loker Anda
-                    </h4>
-                    <div className="text-3xl font-bold text-green-700 bg-white inline-block px-6 py-3 rounded-lg border border-green-200 shadow-sm">
-                      {lockerCode}
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -938,8 +915,8 @@ export default function TransactionPage() {
                         if (activeTransaction?.rentCode) {
                           setShowQR(true);
                         } else {
-                          window.alert(
-                            "Tidak ada transaksi aktif untuk dikembalikan."
+                          toast.warning(
+                            "Tidak ada transaksi aktif untuk dikembalikan"
                           );
                         }
                       }}

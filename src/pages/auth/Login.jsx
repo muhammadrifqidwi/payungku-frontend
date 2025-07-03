@@ -12,15 +12,25 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
+// Skema validasi Zod untuk Login
 const schema = z.object({
-  phone: z.string().min(8, "Nomor telepon wajib diisi"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  phone: z
+    .string()
+    .min(1, "Nomor telepon wajib diisi")
+    .min(8, "Nomor telepon minimal 8 digit")
+    .regex(/^[0-9]+$/, "Nomor telepon hanya boleh berisi angka"),
+  password: z
+    .string()
+    .min(1, "Password wajib diisi")
+    .min(6, "Password minimal 6 karakter"),
 });
 
 // Custom Google Login Button Component
@@ -30,7 +40,7 @@ const CustomGoogleButton = ({ onClick, disabled }) => {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group">
+      className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md">
       <div className="flex items-center justify-center w-5 h-5">
         <svg viewBox="0 0 24 24" className="w-5 h-5">
           <path
@@ -65,10 +75,15 @@ const Login = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    watch,
+    formState: { errors, isSubmitting, isValid, touchedFields },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange", // Validasi real-time
   });
+
+  const watchedPhone = watch("phone", "");
+  const watchedPassword = watch("password", "");
 
   const onSubmit = async (data) => {
     try {
@@ -118,6 +133,14 @@ const Login = () => {
       toast.error("Gagal login dengan Google");
       console.error(err);
     }
+  };
+
+  // Helper function untuk menampilkan status validasi field
+  const getFieldStatus = (fieldName, value) => {
+    if (!touchedFields[fieldName]) return null;
+    if (errors[fieldName]) return "error";
+    if (value && value.length > 0) return "success";
+    return null;
   };
 
   return (
@@ -179,13 +202,25 @@ const Login = () => {
                     type="text"
                     id="phone"
                     {...register("phone")}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    className={`w-full pl-12 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      getFieldStatus("phone", watchedPhone) === "error"
+                        ? "border-red-300 focus:border-red-500"
+                        : getFieldStatus("phone", watchedPhone) === "success"
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="081234567890"
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  {getFieldStatus("phone", watchedPhone) === "error" && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                  )}
                 </div>
                 {errors.phone && (
-                  <p className="text-red-500 text-sm">{errors.phone.message}</p>
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.phone.message}
+                  </p>
                 )}
               </div>
 
@@ -201,7 +236,14 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     id="password"
                     {...register("password")}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 placeholder-gray-400"
+                    className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder-gray-400 ${
+                      getFieldStatus("password", watchedPassword) === "error"
+                        ? "border-red-300 focus:border-red-500"
+                        : getFieldStatus("password", watchedPassword) ===
+                          "success"
+                        ? "border-green-300 focus:border-green-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
                     placeholder="Masukkan password"
                   />
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -215,9 +257,13 @@ const Login = () => {
                       <Eye className="h-5 w-5" />
                     )}
                   </button>
+                  {getFieldStatus("password", watchedPassword) === "error" && (
+                    <AlertCircle className="absolute right-12 top-1/2 transform -translate-y-1/2 text-red-500 h-5 w-5" />
+                  )}
                 </div>
                 {errors.password && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
                     {errors.password.message}
                   </p>
                 )}
@@ -236,8 +282,12 @@ const Login = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                disabled={isSubmitting || !isValid}
+                className={`w-full font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform transition-all duration-200 ${
+                  isSubmitting || !isValid
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02]"
+                }`}>
                 <div className="flex items-center justify-center gap-2">
                   {isSubmitting ? (
                     <>
@@ -276,6 +326,9 @@ const Login = () => {
                     )}
                     useOneTap={false}
                     auto_select={false}
+                    theme="outline"
+                    size="large"
+                    width="100%"
                   />
                 </GoogleOAuthProvider>
               </div>
