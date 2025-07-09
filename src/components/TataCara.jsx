@@ -37,8 +37,9 @@ function HowItWorks() {
     },
     {
       icon: QrCode,
-      title: "Dapatkan Kode Sewa",
-      description: "Setelah pembayaran berhasil, Anda akan menerima kode unik.",
+      title: "Dapatkan Kode loker",
+      description:
+        "Setelah pembayaran berhasil, Anda akan menerima kode loker untuk pengambilan payung.",
     },
     {
       icon: Umbrella,
@@ -60,14 +61,14 @@ function HowItWorks() {
       description: "Datangi lokasi yang ditunjukkan oleh sistem.",
     },
     {
-      icon: QrCode,
-      title: "Scan Barcode di Loker",
-      description: "Scan kode di lokasi sebagai validasi pengembalian.",
+      icon: Key,
+      title: "Kembalikan Payung",
+      description: "Klik tombol Kembalikan Payung untuk mengembalikan payung.",
     },
     {
-      icon: Key,
-      title: "Masukkan Kode Pengembalian",
-      description: "Gunakan kode sewa untuk membuka dan mengembalikan payung.",
+      icon: QrCode,
+      title: "Tampilkan QR Code",
+      description: "Tunjukkan QR Code ke petugas untuk validasi pengembalian.",
     },
     {
       icon: CheckCircle,

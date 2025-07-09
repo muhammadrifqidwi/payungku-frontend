@@ -606,7 +606,7 @@ export default function LandingPage() {
               Rp12.000
             </p>
             <p className="text-gray-500 mb-4 text-sm sm:text-base">
-              Berlaku hingga pukul 19.00 di hari yang sama
+              Berlaku hingga pukul 18.00 di hari yang sama
             </p>
             <ul className="text-left text-gray-600 space-y-2 mb-6 text-sm sm:text-base">
               <li>✔ Gunakan payung seharian penuh</li>
