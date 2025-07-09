@@ -1145,6 +1145,8 @@ const DashboardAdmin = () => {
                     <option value="">Semua Status</option>
                     <option value="active">Aktif</option>
                     <option value="returned">Dikembalikan</option>
+                    <option value="late">Terlambat</option>
+                    <option value="pending">Pending</option>
                   </select>
 
                   <input
