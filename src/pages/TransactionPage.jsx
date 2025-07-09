@@ -342,6 +342,59 @@ export default function TransactionPage() {
     }
   };
 
+  const handleReturnClick = async () => {
+    if (!activeTransaction?.token || !returnLocationId) {
+      toast.warning("Transaksi atau lokasi pengembalian tidak valid.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const res = await api.get(
+        `/transactions/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      const { valid, isLate, snapToken, denda } = res.data;
+
+      if (!valid) {
+        toast.error("Token tidak valid atau transaksi sudah dikembalikan.");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (isLate && snapToken) {
+        toast.warning(`Anda terlambat mengembalikan. Denda: Rp ${denda}`);
+        window.snap.pay(snapToken, {
+          onSuccess: () => {
+            toast.success(
+              "Denda berhasil dibayar. Silakan lanjutkan pengembalian."
+            );
+            setShowQR(true); // Baru tampilkan QR setelah denda dibayar
+            setIsProcessing(false);
+          },
+          onClose: () => {
+            toast.warning("Denda belum dibayar. Pengembalian dibatalkan.");
+            setIsProcessing(false);
+          },
+          onError: () => {
+            toast.error("Gagal melakukan pembayaran denda.");
+            setIsProcessing(false);
+          },
+        });
+      } else {
+        setShowQR(true);
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error("❌ Validasi pengembalian error:", err);
+      toast.error("Gagal memvalidasi pengembalian.");
+      setIsProcessing(false);
+    }
+  };
+
   const handleRetryPayment = (transaction) => {
     const snapToken =
       transaction.snapToken || transaction.paymentResult?.snapToken;
@@ -917,15 +970,7 @@ export default function TransactionPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => {
-                        if (activeTransaction?.rentCode) {
-                          setShowQR(true);
-                        } else {
-                          toast.warning(
-                            "Tidak ada transaksi aktif untuk dikembalikan"
-                          );
-                        }
-                      }}
+                      onClick={handleReturnClick}
                       disabled={!nearest || isProcessing}
                       className={`w-full py-3 rounded-lg text-white font-medium flex items-center justify-center ${
                         !nearest || isProcessing
