@@ -306,6 +306,10 @@ export default function TransactionPage() {
             toast.success(
               `Pembayaran berhasil! Ambil payung di loker: ${confirmRes.data.lockerCode}`
             );
+            console.log(
+              "✅ lockerCode dari backend:",
+              confirmRes.data.lockerCode
+            );
           } catch (e) {
             console.error(e);
             toast.error("Terjadi kesalahan saat menyimpan transaksi");
@@ -718,25 +722,27 @@ export default function TransactionPage() {
                 )}
 
                 {/* Locker Code Display */}
-                {lockerCode && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                    <div className="flex items-center justify-center mb-3">
-                      <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
-                      <h4 className="text-lg font-semibold text-green-800">
-                        Peminjaman Berhasil!
-                      </h4>
-                    </div>
-                    <p className="text-green-700 mb-4">
-                      Silakan ambil payung Anda di loker dengan kode:
-                    </p>
-                    <div className="bg-white inline-block px-8 py-4 rounded-xl border-2 border-green-300 shadow-lg">
-                      <div className="text-4xl font-bold text-green-700 tracking-wider">
-                        {lockerCode}
+                {lockerCode && activeTab === "rent" && (
+                  <div className="mt-6">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                      <div className="flex items-center justify-center mb-3">
+                        <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
+                        <h4 className="text-lg font-semibold text-green-800">
+                          Peminjaman Berhasil!
+                        </h4>
                       </div>
+                      <p className="text-green-700 mb-4">
+                        Silakan ambil payung Anda di loker dengan kode:
+                      </p>
+                      <div className="bg-white inline-block px-8 py-4 rounded-xl border-2 border-green-300 shadow-lg">
+                        <div className="text-4xl font-bold text-green-700 tracking-wider">
+                          {lockerCode}
+                        </div>
+                      </div>
+                      <p className="text-sm text-green-600 mt-4">
+                        Simpan kode ini dengan baik untuk mengambil payung Anda
+                      </p>
                     </div>
-                    <p className="text-sm text-green-600 mt-4">
-                      Simpan kode ini dengan baik untuk mengambil payung Anda
-                    </p>
                   </div>
                 )}
 
