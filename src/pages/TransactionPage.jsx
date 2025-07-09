@@ -351,7 +351,7 @@ export default function TransactionPage() {
     setIsProcessing(true);
     try {
       const res = await api.get(
-        `/transactions/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
+        `/transactions/return/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
         {
           headers: { Authorization: `Bearer ${userToken}` },
         }

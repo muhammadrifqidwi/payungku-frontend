@@ -29,10 +29,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Import komponen DashboardStats yang baru:
-// Hapus baris ini:
-// import DashboardStats from "../../components/admin/DashboardStats"
-
 import {
   Users,
   UserIcon,
