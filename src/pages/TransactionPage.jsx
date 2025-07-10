@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -49,6 +48,7 @@ export default function TransactionPage() {
   const [alert, setAlert] = useState({ show: false, type: "", message: "" });
   const [userLocation, setUserLocation] = useState(null);
   const [nearest, setNearest] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [rentCode, setRentCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("rent");
@@ -339,93 +339,6 @@ export default function TransactionPage() {
       console.error(err);
       toast.error("Gagal memulai transaksi");
       setIsProcessing(false);
-    }
-  };
-
-  const handleReturnClick = async (
-    activeTransaction,
-    returnLocationId,
-    setQRData,
-    setShowQR,
-    userToken
-  ) => {
-    try {
-      if (!activeTransaction || !activeTransaction.token) {
-        toast.error("Transaksi tidak ditemukan atau tidak valid.");
-        return;
-      }
-
-      const config = {
-        headers: { Authorization: `Bearer ${userToken}` },
-      };
-
-      const token = activeTransaction.token;
-
-      // 1️⃣ VALIDASI TOKEN TERLEBIH DAHULU
-      const validateRes = await api.get(
-        `/transactions/return/validate/${token}?locationId=${returnLocationId}`,
-        config
-      );
-
-      if (validateRes.data.refreshed) {
-        toast.error("Token sudah kedaluwarsa. Silakan klik tombol lagi.");
-        return;
-      }
-
-      if (!validateRes.data.valid) {
-        toast.error(validateRes.data.message || "Token tidak valid.");
-        return;
-      }
-
-      // 2️⃣ AMBIL STATUS SETELAH VALIDASI
-      const trxStatus = validateRes.data.transaction.status;
-
-      // 3️⃣ JIKA STATUS TELAT → BAYAR DENDA DULU
-      if (trxStatus === "late") {
-        const returnRes = await api.post(
-          "/transactions/return",
-          {
-            token,
-            returnLocationId,
-          },
-          config
-        );
-
-        if (returnRes.data.status === "late" && returnRes.data.snapToken) {
-          toast("Membuka pembayaran denda...");
-          window.snap.pay(returnRes.data.snapToken, {
-            onSuccess: () => {
-              toast.success("Denda berhasil dibayar!");
-              window.location.reload();
-            },
-            onPending: () => {
-              toast("Menunggu penyelesaian pembayaran...");
-            },
-            onError: () => {
-              toast.error("Pembayaran denda gagal.");
-            },
-          });
-        } else {
-          toast.error("Gagal menyiapkan pembayaran denda.");
-        }
-        return;
-      }
-
-      // 4️⃣ JIKA STATUS MASIH ACTIVE → TAMPILKAN QR
-      if (trxStatus === "active") {
-        setQRData(validateRes.data.transaction);
-        setShowQR(true);
-        toast.success("QR Code siap digunakan untuk pengembalian.");
-        return;
-      }
-
-      // 5️⃣ STATUS LAINNYA TIDAK VALID
-      toast.error("Transaksi tidak dapat diproses. Status tidak valid.");
-    } catch (err) {
-      console.error("❌ handleReturnClick Error:", err);
-      toast.error(
-        err?.response?.data?.message || "Terjadi kesalahan saat pengembalian."
-      );
     }
   };
 
@@ -1004,7 +917,15 @@ export default function TransactionPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={handleReturnClick}
+                      onClick={() => {
+                        if (activeTransaction?.rentCode) {
+                          setShowQR(true);
+                        } else {
+                          toast.warning(
+                            "Tidak ada transaksi aktif untuk dikembalikan"
+                          );
+                        }
+                      }}
                       disabled={!nearest || isProcessing}
                       className={`w-full py-3 rounded-lg text-white font-medium flex items-center justify-center ${
                         !nearest || isProcessing
