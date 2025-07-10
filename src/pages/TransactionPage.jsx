@@ -359,19 +359,18 @@ export default function TransactionPage() {
         headers: { Authorization: `Bearer ${userToken}` },
       };
 
-      // ✅ Jika status transaksi sudah late, proses denda
+      const token = activeTransaction.token;
+
+      // 🟡 1. Cek status transaksi: jika LATE → coba proses pengembalian untuk munculkan denda
       if (activeTransaction.status === "late") {
         const res = await api.post(
           "/transactions/return",
-          {
-            token: activeTransaction.token,
-            returnLocationId,
-          },
+          { token, returnLocationId },
           config
         );
 
-        if (res.data.status === "late") {
-          // → Snap token denda tersedia, tampilkan Midtrans
+        if (res.data.status === "late" && res.data.snapToken) {
+          // Snap token denda tersedia → panggil midtrans
           window.snap.pay(res.data.snapToken, {
             onSuccess: () => {
               toast.success("Pembayaran denda berhasil!");
@@ -384,24 +383,37 @@ export default function TransactionPage() {
               toast.error("Pembayaran denda gagal.");
             },
           });
+        } else {
+          toast.error("Transaksi telat, tetapi token Midtrans tidak tersedia.");
         }
-      } else {
-        // ✅ Jika masih active, lakukan validasi QR
-        const res = await axios.get(
-          `/api/transactions/return/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
+
+        return; // pastikan tidak lanjut ke bawah
+      }
+
+      // 🟢 2. Jika transaksi masih ACTIVE → validasi QR
+      if (activeTransaction.status === "active") {
+        const res = await api.get(
+          `/transactions/return/validate/${token}?locationId=${returnLocationId}`,
           config
         );
 
         if (res.data.valid) {
-          setQRData(res.data.transaction); // atau res.data.transaction.token
+          setQRData(res.data.transaction);
           setShowQR(true);
           toast.success("QR Code siap untuk pengembalian.");
+        } else if (res.data.refreshed) {
+          toast.error("Token sudah kadaluarsa. Silakan coba lagi.");
         } else {
           toast.error(res.data.message || "Validasi gagal.");
         }
+
+        return;
       }
+
+      // 🔴 3. Jika status bukan "active" atau "late"
+      toast.error("Status transaksi tidak valid untuk pengembalian.");
     } catch (err) {
-      console.error("❌ Error:", err);
+      console.error("❌ Error handleReturnClick:", err);
       toast.error(
         err?.response?.data?.message || "Gagal memproses pengembalian."
       );
