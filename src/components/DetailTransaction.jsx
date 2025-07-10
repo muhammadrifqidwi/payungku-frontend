@@ -421,7 +421,7 @@ export default function DetailTransaction() {
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-4">
-                  Kode: <span className="font-medium">{data.token}</span>
+                  Kode: <span className="font-medium">{data.rentCode}</span>
                 </p>
               </div>
             </div>
