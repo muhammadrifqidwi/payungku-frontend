@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -48,7 +49,6 @@ export default function TransactionPage() {
   const [alert, setAlert] = useState({ show: false, type: "", message: "" });
   const [userLocation, setUserLocation] = useState(null);
   const [nearest, setNearest] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [rentCode, setRentCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("rent");
@@ -342,56 +342,69 @@ export default function TransactionPage() {
     }
   };
 
-  const handleReturnClick = async () => {
-    if (!activeTransaction?.token || !returnLocationId) {
-      toast.warning("Transaksi atau lokasi pengembalian tidak valid.");
-      return;
-    }
-
-    setIsProcessing(true);
+  const handleReturnClick = async (
+    activeTransaction,
+    returnLocationId,
+    setQRData,
+    setShowQR,
+    userToken
+  ) => {
     try {
-      const res = await api.get(
-        `/transactions/return/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
-        {
-          headers: { Authorization: `Bearer ${userToken}` },
-        }
-      );
-
-      const { valid, isLate, snapToken, denda } = res.data;
-
-      if (!valid) {
-        toast.error("Token tidak valid atau transaksi sudah dikembalikan.");
-        setIsProcessing(false);
+      if (!activeTransaction || !activeTransaction.token) {
+        toast.error("Transaksi tidak ditemukan atau tidak valid.");
         return;
       }
 
-      if (isLate && snapToken) {
-        toast.warning(`Anda terlambat mengembalikan. Denda: Rp ${denda}`);
-        window.snap.pay(snapToken, {
-          onSuccess: () => {
-            toast.success(
-              "Denda berhasil dibayar. Silakan lanjutkan pengembalian."
-            );
-            setShowQR(true); // Baru tampilkan QR setelah denda dibayar
-            setIsProcessing(false);
+      const config = {
+        headers: { Authorization: `Bearer ${userToken}` },
+      };
+
+      // ✅ Jika status transaksi sudah late, proses denda
+      if (activeTransaction.status === "late") {
+        const res = await api.post(
+          "/transactions/return",
+          {
+            token: activeTransaction.token,
+            returnLocationId,
           },
-          onClose: () => {
-            toast.warning("Denda belum dibayar. Pengembalian dibatalkan.");
-            setIsProcessing(false);
-          },
-          onError: () => {
-            toast.error("Gagal melakukan pembayaran denda.");
-            setIsProcessing(false);
-          },
-        });
+          config
+        );
+
+        if (res.data.status === "late") {
+          // → Snap token denda tersedia, tampilkan Midtrans
+          window.snap.pay(res.data.snapToken, {
+            onSuccess: () => {
+              toast.success("Pembayaran denda berhasil!");
+              window.location.reload();
+            },
+            onPending: () => {
+              toast("Menunggu pembayaran denda...");
+            },
+            onError: () => {
+              toast.error("Pembayaran denda gagal.");
+            },
+          });
+        }
       } else {
-        setShowQR(true);
-        setIsProcessing(false);
+        // ✅ Jika masih active, lakukan validasi QR
+        const res = await axios.get(
+          `/api/transactions/return/validate/${activeTransaction.token}?locationId=${returnLocationId}`,
+          config
+        );
+
+        if (res.data.valid) {
+          setQRData(res.data.transaction); // atau res.data.transaction.token
+          setShowQR(true);
+          toast.success("QR Code siap untuk pengembalian.");
+        } else {
+          toast.error(res.data.message || "Validasi gagal.");
+        }
       }
     } catch (err) {
-      console.error("❌ Validasi pengembalian error:", err);
-      toast.error("Gagal memvalidasi pengembalian.");
-      setIsProcessing(false);
+      console.error("❌ Error:", err);
+      toast.error(
+        err?.response?.data?.message || "Gagal memproses pengembalian."
+      );
     }
   };
 
