@@ -26,14 +26,23 @@ import {
 import "leaflet/dist/leaflet.css";
 
 // Zod schema untuk validasi form
-const schema = z.object({
-  name: z.string().min(1, "Nama lokasi wajib diisi"),
-  address: z.string().optional(),
-  latitude: z.string().min(1, "Latitude wajib diisi"),
-  longitude: z.string().min(1, "Longitude wajib diisi"),
-  stock: z.coerce.number().min(0, "Minimal 0"),
-  lockers: z.coerce.number().min(0, "Minimal 0"),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "Nama lokasi wajib diisi"),
+    address: z.string().optional(),
+    latitude: z.string().min(1, "Latitude wajib diisi"),
+    longitude: z.string().min(1, "Longitude wajib diisi"),
+    stock: z.coerce.number().min(0, "Minimal 0"),
+    lockers: z.coerce.number().min(1, "Minimal 1"),
+  })
+  .refine((data) => data.stock < data.lockers, {
+    path: ["stock"],
+    message: "Stok payung harus lebih sedikit dari jumlah loker",
+  })
+  .refine((data) => data.lockers > data.stock, {
+    path: ["lockers"],
+    message: "Jumlah loker harus lebih banyak dari stok payung",
+  });
 
 // Komponen untuk menangkap klik pada peta
 function MapClickHandler({ onMapClick }) {
@@ -47,6 +56,7 @@ function MapClickHandler({ onMapClick }) {
 
 // Komponen utama
 const AddLocationForm = ({ onClose, onAdd }) => {
+  const modalRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState(null);
   const [mapCenter, setMapCenter] = useState([-6.598769, 106.798622]);
@@ -81,6 +91,16 @@ const AddLocationForm = ({ onClose, onAdd }) => {
     }
   }, [latitude, longitude]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   // Handle map click
   const handleMapClick = (latlng) => {
     const { lat, lng } = latlng;
@@ -108,6 +128,7 @@ const AddLocationForm = ({ onClose, onAdd }) => {
       if (onAdd) onAdd(res.data);
       reset();
       setPosition(null);
+      onClose();
     } catch (err) {
       console.error(err);
       toast.dismiss(toastId);
@@ -150,7 +171,9 @@ const AddLocationForm = ({ onClose, onAdd }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm overflow-y-auto">
       <div className="min-h-screen py-8 px-4 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
             <div className="flex justify-between items-center">
@@ -204,18 +227,6 @@ const AddLocationForm = ({ onClose, onAdd }) => {
                             {errors.name.message}
                           </p>
                         )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Alamat
-                        </label>
-                        <textarea
-                          {...register("address")}
-                          rows={2}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          placeholder="Masukkan alamat lengkap lokasi"
-                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">

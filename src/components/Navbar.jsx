@@ -124,6 +124,15 @@ export default function Navbar() {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const updatedPhoto = localStorage.getItem("photo");
+      setPhoto(updatedPhoto);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <header
       className={`fixed top-0 z-5000 w-full transition-all duration-300 ${

@@ -97,6 +97,7 @@ const Login = () => {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
+      localStorage.setItem("photo", res.data.photo || "");
 
       toast.success("Login berhasil!");
       navigate("/");

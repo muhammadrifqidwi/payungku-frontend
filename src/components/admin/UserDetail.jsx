@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   User,
@@ -18,6 +18,7 @@ import {
 import api from "../../utils/axiosInstance";
 
 const UserDetail = ({ userId, onClose }) => {
+  const modalRef = useRef(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -66,6 +67,16 @@ const UserDetail = ({ userId, onClose }) => {
     });
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center">
@@ -111,7 +122,9 @@ const UserDetail = ({ userId, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:py-10">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
             <div className="flex justify-between items-center">
@@ -249,29 +262,13 @@ const UserDetail = ({ userId, onClose }) => {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">
-                      Terakhir Aktif
+                      Terakhir Transaksi
                     </p>
                     <p className="text-base font-medium text-gray-900">
-                      {formatDateTime(user.lastActive)}
+                      {formatDateTime(user.lastTransaction)}
                     </p>
                   </div>
                 </div>
-
-                {user.address && (
-                  <div className="flex items-start">
-                    <div className="bg-teal-50 p-2 rounded-lg">
-                      <MapPin className="h-5 w-5 text-teal-500" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">
-                        Alamat
-                      </p>
-                      <p className="text-base font-medium text-gray-900">
-                        {user.address}
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

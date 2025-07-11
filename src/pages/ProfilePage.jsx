@@ -138,6 +138,7 @@ export default function ProfilePage() {
         photo: res.data.secure_url,
       }));
 
+      localStorage.setItem("photo", res.data.secure_url);
       toast.success("Foto profil berhasil diunggah!");
     } catch (err) {
       console.error("Gagal upload ke Cloudinary", err);
@@ -214,6 +215,7 @@ export default function ProfilePage() {
       );
 
       setPhotoPreview(null);
+      localStorage.setItem("photo", "");
       toast.success("Foto profil berhasil dihapus.");
     } catch (err) {
       console.error(err);

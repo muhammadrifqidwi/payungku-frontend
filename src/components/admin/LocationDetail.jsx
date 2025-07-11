@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -71,6 +71,7 @@ function ChangeView({ center }) {
 }
 
 const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
+  const modalRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -138,6 +139,16 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
       fetchLocationDetails();
     }
   }, [locationId, reset]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   const onSubmit = async (data) => {
     try {
@@ -220,7 +231,9 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
   if (error && !location) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 z-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full border border-gray-100">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full border border-gray-100">
           <div className="text-center">
             <div className="bg-red-50 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="h-10 w-10 text-red-500" />
@@ -263,7 +276,9 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full border border-gray-200 overflow-hidden">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full border border-gray-200 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
             <div className="flex justify-between items-center">
@@ -294,9 +309,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
                   <h3 className="text-2xl font-bold text-gray-800">
                     {location.name}
                   </h3>
-                  <p className="text-gray-500 mt-1">
-                    {location.address || "Alamat tidak tersedia"}
-                  </p>
                   <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${

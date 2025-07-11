@@ -67,6 +67,27 @@ const SidebarLink = ({ icon, text, active, onClick, collapsed = false }) => {
   );
 };
 
+// Consistent Loader Component
+const DashboardLoader = ({ message = "Memuat dashboard..." }) => (
+  <div className="flex justify-center items-center min-h-screen bg-gray-50">
+    <div className="text-center max-w-md">
+      <div className="relative w-20 h-20 mx-auto mb-6">
+        <div className="absolute inset-0 rounded-full border-t-4 border-b-4 border-blue-500 animate-spin"></div>
+        <div className="absolute inset-3 rounded-full bg-blue-50 flex items-center justify-center">
+          <Umbrella className="h-8 w-8 text-blue-500" />
+        </div>
+      </div>
+      <p className="text-gray-600 font-medium">{message}</p>
+      <p className="text-gray-500 text-sm mt-2">
+        Sedang mengambil data dari server
+      </p>
+      <div className="mt-4 bg-gray-200 rounded-full h-2">
+        <div className="bg-blue-500 h-full rounded-full animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
+
 // Dashboard Stats Component - Integrated
 const DashboardStats = ({ stats, locations, isLoading }) => {
   // Fallback values with validation
@@ -168,6 +189,11 @@ const DashboardAdmin = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userFilter, setUserFilter] = useState("all");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmAction, setConfirmAction] = useState(() => () => {});
 
   const token = useMemo(() => localStorage.getItem("token"), []);
 
@@ -248,7 +274,10 @@ const DashboardAdmin = () => {
       // Process locations
       if (locationsRes.status === "fulfilled") {
         const locations = locationsRes.value.data || [];
-        setLocations(locations);
+        const sorted = [...locations].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setLocations(sorted);
       } else {
         console.error("Locations fetch failed:", locationsRes.reason);
         setLocations([]);
@@ -323,7 +352,10 @@ const DashboardAdmin = () => {
           timeout: 30000,
         });
         locations = locationsResponse.data || [];
-        setLocations(locations);
+        const sorted = [...locations].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setLocations(sorted);
       } catch {
         setLocations([]);
       }
@@ -368,31 +400,45 @@ const DashboardAdmin = () => {
     fetchDataSequentially();
   }, [fetchDataSequentially]);
 
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      const response = await api.get("/users/me");
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error("Failed to fetch current user:", error);
+    }
+  }, []);
+
   // Ganti useEffect untuk initial data fetch
   useEffect(() => {
     const loadData = async () => {
       try {
         await fetchDataSequentially();
+        await fetchCurrentUser();
       } catch {
         await fetchDataSequentially();
       }
     };
 
     loadData();
-  }, [fetchDataSequentially]);
+  }, [fetchDataSequentially, fetchCurrentUser]);
 
   const handleDeleteLocation = async (id) => {
-    if (window.confirm("Yakin ingin menghapus lokasi ini?")) {
-      try {
-        await api.delete(`/admin/locations/${id}`);
-        toast.success("Lokasi berhasil dihapus");
-        const response = await api.get("/admin/locations");
-        setLocations(response.data);
-      } catch (err) {
-        console.error("Gagal menghapus lokasi:", err);
-        toast.error("Gagal menghapus lokasi");
-      }
+    try {
+      await api.delete(`/admin/locations/${id}`);
+      toast.success("Lokasi berhasil dihapus");
+      const response = await api.get("/admin/locations");
+      setLocations(response.data);
+    } catch (err) {
+      console.error("Gagal menghapus lokasi:", err);
+      toast.error("Gagal menghapus lokasi");
     }
+  };
+
+  const showDeleteConfirmation = (message, action) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setShowConfirmModal(true);
   };
 
   const handleLogout = () => {
@@ -411,10 +457,18 @@ const DashboardAdmin = () => {
     });
   };
 
-  const handleDeleteTransaction = async (id) => {
-    const konfirmasi = window.confirm("Yakin ingin menghapus transaksi ini?");
-    if (!konfirmasi) return;
+  const getFilteredUsers = () => {
+    if (userFilter === "all") return allUsers;
+    if (userFilter === "peminjam")
+      return allUsers.filter(
+        (user) => user.role === "user" || user.role === "peminjam"
+      );
+    if (userFilter === "admin")
+      return allUsers.filter((user) => user.role === "admin");
+    return allUsers;
+  };
 
+  const handleDeleteTransaction = async (id) => {
     try {
       await api.delete(`/admin/transactions/${id}`);
       toast.success("Transaksi berhasil dihapus");
@@ -426,8 +480,6 @@ const DashboardAdmin = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm("Yakin ingin menghapus pengguna ini?")) return;
-
     try {
       await api.delete(`/admin/users/${userId}`);
       toast.success("Pengguna berhasil dihapus");
@@ -554,8 +606,9 @@ const DashboardAdmin = () => {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUsers = Array.isArray(allUsers)
-    ? allUsers.slice(indexOfFirstItem, indexOfLastItem)
+  const filteredUsers = getFilteredUsers();
+  const currentUsers = Array.isArray(filteredUsers)
+    ? filteredUsers.slice(indexOfFirstItem, indexOfLastItem)
     : [];
   const filteredTransactions = getFilteredTransactions();
   const currentTransactions = filteredTransactions.slice(
@@ -567,22 +620,7 @@ const DashboardAdmin = () => {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center max-w-md">
-          <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Memuat dashboard...</p>
-          <p className="text-gray-500 text-sm mt-2">
-            Sedang mengambil data dari server
-          </p>
-          <div className="mt-4 bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-1000 animate-pulse"
-              style={{ width: "60%" }}></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <DashboardLoader />;
   }
 
   // Critical error state
@@ -617,6 +655,31 @@ const DashboardAdmin = () => {
       </div>
     );
   }
+
+  const ConfirmModal = ({ show, title, message, onCancel, onConfirm }) => {
+    if (!show) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30">
+        <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+          <p className="text-sm text-gray-600 mb-4">{message}</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+              Tidak
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -800,11 +863,22 @@ const DashboardAdmin = () => {
                   className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
                 />
               </button>
-              <button
-                onClick={() => navigate("/profile")}
-                className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-medium">
-                A
-              </button>
+              <div className="relative">
+                {currentUser?.profilePhoto ? (
+                  <img
+                    src={currentUser.profilePhoto || "/placeholder.svg"}
+                    alt={currentUser.name || "Profile"}
+                    className="h-8 w-8 rounded-full object-cover border-2 border-blue-500 cursor-pointer hover:border-blue-600 transition-colors"
+                    onClick={() => navigate("/profile")}
+                  />
+                ) : (
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-medium hover:bg-blue-700 transition-colors">
+                    {currentUser?.name?.charAt(0)?.toUpperCase() || "A"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -1047,6 +1121,32 @@ const DashboardAdmin = () => {
                     Kelola semua pengguna dalam sistem
                   </p>
                 </div>
+                <div className="flex items-center space-x-3">
+                  <select
+                    value={userFilter}
+                    onChange={(e) => {
+                      setUserFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">
+                      Semua Pengguna ({allUsers.length})
+                    </option>
+                    <option value="peminjam">
+                      Peminjam (
+                      {
+                        allUsers.filter(
+                          (u) => u.role === "user" || u.role === "peminjam"
+                        ).length
+                      }
+                      )
+                    </option>
+                    <option value="admin">
+                      Admin ({allUsers.filter((u) => u.role === "admin").length}
+                      )
+                    </option>
+                  </select>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -1065,6 +1165,11 @@ const DashboardAdmin = () => {
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Aksi
                       </th>
                     </tr>
@@ -1074,9 +1179,17 @@ const DashboardAdmin = () => {
                       <tr key={user._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                              {user.name.charAt(0)}
-                            </div>
+                            {user.profilePhoto ? (
+                              <img
+                                src={user.profilePhoto || "/placeholder.svg"}
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                                {user.name.charAt(0)}
+                              </div>
+                            )}
                             <div className="ml-3">
                               <div className="text-sm font-medium text-gray-900">
                                 {user.name}
@@ -1087,34 +1200,74 @@ const DashboardAdmin = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {user.email}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.role === "admin"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-green-100 text-green-800"
+                            }`}>
+                            {user.role === "admin"
+                              ? "Administrator"
+                              : "Peminjam"}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex gap-2">
                             <button
                               onClick={() => setSelectedUserId(user._id)}
-                              className="text-gray-400 hover:text-gray-500">
+                              className="text-gray-400 hover:text-blue-500 transition-colors"
+                              title="Lihat Detail">
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="text-gray-400 hover:text-gray-500">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {user.role !== "admin" && (
+                              <button
+                                onClick={() =>
+                                  showDeleteConfirmation(
+                                    `Yakin ingin menghapus pengguna "${user.name}"?`,
+                                    () => handleDeleteUser(user._id)
+                                  )
+                                }
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                title="Hapus Pengguna">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {currentUsers.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="text-center py-8 text-gray-500">
+                          <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">
+                            {userFilter === "all"
+                              ? "Belum ada pengguna terdaftar"
+                              : `Belum ada ${
+                                  userFilter === "admin"
+                                    ? "administrator"
+                                    : "peminjam"
+                                } terdaftar`}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
               <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
                 <div className="text-sm text-gray-500">
                   Menampilkan {indexOfFirstItem + 1} -{" "}
-                  {Math.min(indexOfLastItem, allUsers.length)} dari{" "}
-                  {allUsers.length} pengguna
+                  {Math.min(indexOfLastItem, filteredUsers.length)} dari{" "}
+                  {filteredUsers.length}{" "}
+                  {userFilter === "all" ? "pengguna" : userFilter} pengguna
                 </div>
                 <Pagination
                   currentPage={currentPage}
-                  totalItems={allUsers.length}
+                  totalItems={filteredUsers.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={paginate}
                 />
@@ -1300,9 +1453,16 @@ const DashboardAdmin = () => {
                                 </button>
                                 <button
                                   onClick={() =>
-                                    handleDeleteTransaction(transaction._id)
+                                    showDeleteConfirmation(
+                                      `Yakin ingin menghapus transaksi #${transaction._id.slice(
+                                        -6
+                                      )}?`,
+                                      () =>
+                                        handleDeleteTransaction(transaction._id)
+                                    )
                                   }
-                                  className="text-gray-400 hover:text-gray-500">
+                                  className="text-gray-400 hover:text-red-500"
+                                  title="Hapus Transaksi">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
@@ -1341,12 +1501,14 @@ const DashboardAdmin = () => {
           {showAddLocation && (
             <AddLocationForm
               onClose={() => setShowAddLocation(false)}
-              onLocationAdded={() => {
+              onAdd={(newLocation) => {
                 setShowAddLocation(false);
+                setLocations((prev) => [newLocation, ...prev]);
                 fetchAllData();
               }}
             />
           )}
+
           {activeTab === "locations" && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -1390,54 +1552,73 @@ const DashboardAdmin = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {locations.map((location) => (
-                      <tr key={location._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {location.name}
-                        </td>
-                        <td className="px-6 py-4 text-center text-gray-900">
-                          {location.stock}
-                        </td>
-                        <td className="px-6 py-4 text-center text-gray-900">
-                          {location.lockers}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span
-                            className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              location.stock > 5
-                                ? "bg-green-100 text-green-800"
+                    {[...locations]
+                      .sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                      )
+                      .map((location) => (
+                        <tr key={location._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 font-medium text-gray-900">
+                            {location.name}
+                          </td>
+                          <td className="px-6 py-4 text-center text-gray-900">
+                            {location.stock}
+                          </td>
+                          <td className="px-6 py-4 text-center text-gray-900">
+                            {location.lockers}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span
+                              className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                location.stock > 5
+                                  ? "bg-green-100 text-green-800"
+                                  : location.stock > 0
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                              {location.stock > 5
+                                ? "Tersedia"
                                 : location.stock > 0
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}>
-                            {location.stock > 5
-                              ? "Tersedia"
-                              : location.stock > 0
-                              ? "Terbatas"
-                              : "Kosong"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => setSelectedLocation(location)}
-                            className="p-1 rounded-full hover:bg-blue-50 text-blue-600"
-                            title="Lihat Detail">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteLocation(location._id)}
-                            className="p-1 rounded-full hover:bg-red-50 text-red-600"
-                            title="Hapus Lokasi">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                                ? "Terbatas"
+                                : "Kosong"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              onClick={() => setSelectedLocation(location)}
+                              className="p-1 rounded-full text-gray-400 hover:text-gray-500"
+                              title="Lihat Detail">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                showDeleteConfirmation(
+                                  `Yakin ingin menghapus lokasi "${location.name}"?`,
+                                  () => handleDeleteLocation(location._id)
+                                )
+                              }
+                              className="p-1 rounded-full text-gray-400 hover:text-red-500"
+                              title="Hapus Lokasi">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
+          <ConfirmModal
+            show={showConfirmModal}
+            title="Konfirmasi Penghapusan"
+            message={confirmMessage}
+            onCancel={() => setShowConfirmModal(false)}
+            onConfirm={() => {
+              confirmAction();
+              setShowConfirmModal(false);
+            }}
+          />
         </main>
       </div>
     </div>

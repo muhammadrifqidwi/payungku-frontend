@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   User,
@@ -18,6 +18,7 @@ import api from "../../utils/axiosInstance";
 import { toast } from "sonner";
 
 const TransactionDetail = ({ transactionId, onClose }) => {
+  const modalRef = useRef(null);
   const [transaction, setTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState("");
@@ -54,6 +55,16 @@ const TransactionDetail = ({ transactionId, onClose }) => {
       minute: "2-digit",
     });
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -131,7 +142,9 @@ const TransactionDetail = ({ transactionId, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:py-10">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
             <div className="flex justify-between items-center">
