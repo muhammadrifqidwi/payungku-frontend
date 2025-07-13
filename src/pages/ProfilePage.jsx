@@ -19,6 +19,8 @@ import {
   LogOut,
   ArrowLeft,
   Home,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -46,6 +48,12 @@ export default function ProfilePage() {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
   const fileInputRef = useRef(null);
 
   const token = localStorage.getItem("token");
@@ -70,6 +78,7 @@ export default function ProfilePage() {
     register: registerPassword,
     handleSubmit: handlePasswordSubmit,
     reset: resetPassword,
+    watch: watchPassword,
     formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
   } = useForm({
     resolver: zodResolver(passwordSchema),
@@ -94,6 +103,7 @@ export default function ProfilePage() {
         setProfileValue("name", res.data.name || "");
         setProfileValue("email", res.data.email || "");
         setProfileValue("phone", res.data.phone || "");
+        setPhotoPreview(res.data.photo);
       } catch (err) {
         console.error(err);
         toast.error("Gagal memuat data profil. Silakan coba lagi.");
@@ -519,66 +529,124 @@ export default function ProfilePage() {
                             className="block text-sm font-medium text-gray-700">
                             Kata Sandi Saat Ini
                           </label>
-                          <input
-                            {...registerPassword("currentPassword")}
-                            type="password"
-                            id="currentPassword"
-                            className={`mt-1 block w-full border ${
-                              passwordErrors.currentPassword
-                                ? "border-red-300"
-                                : "border-gray-300"
-                            } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                          />
+                          <div className="relative">
+                            <input
+                              {...registerPassword("currentPassword")}
+                              type={showPassword.current ? "text" : "password"}
+                              id="currentPassword"
+                              className={`mt-1 block w-full border ${
+                                passwordErrors.currentPassword
+                                  ? "border-red-300"
+                                  : "border-gray-300"
+                              } rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
+                              onClick={() =>
+                                setShowPassword((prev) => ({
+                                  ...prev,
+                                  current: !prev.current,
+                                }))
+                              }>
+                              {showPassword.current ? (
+                                <EyeOff className="h-5 w-5" />
+                              ) : (
+                                <Eye className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
                           {passwordErrors.currentPassword && (
                             <p className="mt-1 text-sm text-red-600">
                               {passwordErrors.currentPassword.message}
                             </p>
                           )}
                         </div>
+
                         <div>
                           <label
                             htmlFor="newPassword"
                             className="block text-sm font-medium text-gray-700">
                             Kata Sandi Baru
                           </label>
-                          <input
-                            {...registerPassword("newPassword")}
-                            type="password"
-                            id="newPassword"
-                            className={`mt-1 block w-full border ${
-                              passwordErrors.newPassword
-                                ? "border-red-300"
-                                : "border-gray-300"
-                            } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                          />
+                          <div className="relative">
+                            <input
+                              {...registerPassword("newPassword")}
+                              type={showPassword.new ? "text" : "password"}
+                              id="newPassword"
+                              className={`mt-1 block w-full border ${
+                                passwordErrors.newPassword
+                                  ? "border-red-300"
+                                  : "border-gray-300"
+                              } rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
+                              onClick={() =>
+                                setShowPassword((prev) => ({
+                                  ...prev,
+                                  new: !prev.new,
+                                }))
+                              }>
+                              {showPassword.new ? (
+                                <EyeOff className="h-5 w-5" />
+                              ) : (
+                                <Eye className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
                           {passwordErrors.newPassword && (
                             <p className="mt-1 text-sm text-red-600">
                               {passwordErrors.newPassword.message}
                             </p>
                           )}
                         </div>
+
                         <div>
                           <label
                             htmlFor="confirmPassword"
                             className="block text-sm font-medium text-gray-700">
                             Konfirmasi Kata Sandi Baru
                           </label>
-                          <input
-                            {...registerPassword("confirmPassword")}
-                            type="password"
-                            id="confirmPassword"
-                            className={`mt-1 block w-full border ${
-                              passwordErrors.confirmPassword
-                                ? "border-red-300"
-                                : "border-gray-300"
-                            } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                          />
+                          <div className="relative">
+                            <input
+                              {...registerPassword("confirmPassword")}
+                              type={showPassword.confirm ? "text" : "password"}
+                              id="confirmPassword"
+                              className={`mt-1 block w-full border ${
+                                passwordErrors.confirmPassword
+                                  ? "border-red-300"
+                                  : watchPassword("confirmPassword") &&
+                                    watchPassword("confirmPassword") ===
+                                      watchPassword("newPassword")
+                                  ? "border-green-300"
+                                  : "border-gray-300"
+                              } rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
+                              onClick={() =>
+                                setShowPassword((prev) => ({
+                                  ...prev,
+                                  confirm: !prev.confirm,
+                                }))
+                              }>
+                              {showPassword.confirm ? (
+                                <EyeOff className="h-5 w-5" />
+                              ) : (
+                                <Eye className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
                           {passwordErrors.confirmPassword && (
                             <p className="mt-1 text-sm text-red-600">
                               {passwordErrors.confirmPassword.message}
                             </p>
                           )}
                         </div>
+
                         <div className="flex justify-end">
                           <button
                             type="submit"

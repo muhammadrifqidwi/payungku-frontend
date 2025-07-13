@@ -29,17 +29,16 @@ import "leaflet/dist/leaflet.css";
 const schema = z
   .object({
     name: z.string().min(1, "Nama lokasi wajib diisi"),
-    address: z.string().optional(),
     latitude: z.string().min(1, "Latitude wajib diisi"),
     longitude: z.string().min(1, "Longitude wajib diisi"),
     stock: z.coerce.number().min(0, "Minimal 0"),
     lockers: z.coerce.number().min(1, "Minimal 1"),
   })
-  .refine((data) => data.stock < data.lockers, {
+  .refine((data) => data.stock <= data.lockers, {
     path: ["stock"],
     message: "Stok payung harus lebih sedikit dari jumlah loker",
   })
-  .refine((data) => data.lockers > data.stock, {
+  .refine((data) => data.lockers >= data.stock, {
     path: ["lockers"],
     message: "Jumlah loker harus lebih banyak dari stok payung",
   });
@@ -73,7 +72,6 @@ const AddLocationForm = ({ onClose, onAdd }) => {
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
-      address: "",
       latitude: "",
       longitude: "",
       stock: 0,
@@ -94,7 +92,7 @@ const AddLocationForm = ({ onClose, onAdd }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
+        onClose(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -128,7 +126,7 @@ const AddLocationForm = ({ onClose, onAdd }) => {
       if (onAdd) onAdd(res.data);
       reset();
       setPosition(null);
-      onClose();
+      onClose(true);
     } catch (err) {
       console.error(err);
       toast.dismiss(toastId);

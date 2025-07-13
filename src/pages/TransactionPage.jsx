@@ -243,6 +243,30 @@ export default function TransactionPage() {
     }
   }, [transactions]);
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get("/transactions/user", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+
+        const stillActive = res.data.find(
+          (t) => t.status === "active" && t.paymentStatus === "paid"
+        );
+
+        if (!stillActive && activeTransaction) {
+          await fetchTransactions();
+          await fetchLocations();
+          toast.success("Transaksi pengembalian berhasil diproses");
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeTransaction, fetchTransactions, userToken]);
+
   const handlePinjam = async () => {
     if (!userLocation) {
       setAlert({
@@ -373,8 +397,10 @@ export default function TransactionPage() {
           toast.error("Gagal mengonfirmasi transaksi.");
         }
       },
-      onClose: () => {
+      onClose: async () => {
         toast.warning("Popup ditutup kembali.");
+        await fetchTransactions();
+        await fetchLocations();
       },
     });
   };

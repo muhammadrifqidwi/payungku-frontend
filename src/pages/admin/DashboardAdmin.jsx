@@ -1494,7 +1494,12 @@ const DashboardAdmin = () => {
           {selectedLocation && (
             <LocationDetail
               locationId={selectedLocation._id}
-              onClose={() => setSelectedLocation(null)}
+              onClose={(shouldRefresh) => {
+                setSelectedLocation(null);
+                if (shouldRefresh) {
+                  fetchAllData();
+                }
+              }}
             />
           )}
 

@@ -29,27 +29,22 @@ import api from "../../utils/axiosInstance";
 import "leaflet/dist/leaflet.css";
 
 // Zod validation schema
-const locationSchema = z.object({
-  name: z.string().min(1, { message: "Nama lokasi harus diisi" }),
-  address: z.string().optional(),
-  latitude: z.coerce
-    .number()
-    .min(-90, { message: "Latitude minimal -90" })
-    .max(90, { message: "Latitude maksimal 90" }),
-  longitude: z.coerce
-    .number()
-    .min(-180, { message: "Longitude minimal -180" })
-    .max(180, { message: "Longitude maksimal 180" }),
-  stock: z.coerce
-    .number()
-    .int()
-    .min(0, { message: "Stok tidak boleh negatif" }),
-  lockers: z.coerce
-    .number()
-    .int()
-    .min(0, { message: "Jumlah loker tidak boleh negatif" }),
-  description: z.string().optional(),
-});
+const locationSchema = z
+  .object({
+    name: z.string().min(1, { message: "Nama lokasi harus diisi" }),
+    latitude: z.coerce.number().min(-90).max(90),
+    longitude: z.coerce.number().min(-180).max(180),
+    stock: z.coerce.number().int().min(0),
+    lockers: z.coerce.number().int().min(1),
+  })
+  .refine((data) => data.stock <= data.lockers, {
+    path: ["stock"],
+    message: "Stok payung harus lebih sedikit dari jumlah loker",
+  })
+  .refine((data) => data.lockers >= data.stock, {
+    message: "Jumlah loker harus lebih banyak daripada jumlah stok",
+    path: ["lockers"],
+  });
 
 // Fix Leaflet icon issue
 const defaultIcon = L.icon({
@@ -90,12 +85,10 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
     resolver: zodResolver(locationSchema),
     defaultValues: {
       name: "",
-      address: "",
       latitude: "",
       longitude: "",
       stock: 0,
       lockers: 0,
-      description: "",
     },
   });
 
@@ -112,12 +105,10 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
         // Set form values
         reset({
           name: data.name || "",
-          address: data.address || "",
           latitude: data.latitude || "",
           longitude: data.longitude || "",
           stock: data.stock || 0,
           lockers: data.lockers || 0,
-          description: data.description || "",
         });
 
         // Set map center
@@ -190,7 +181,7 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
       toast.success("Lokasi berhasil dihapus");
 
       if (onClose) {
-        onClose();
+        onClose(true);
       }
     } catch (err) {
       console.error("Error deleting location:", err);
@@ -435,22 +426,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Alamat
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        {...register("address")}
-                        className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Latitude
                     </label>
                     <div className="relative">
@@ -548,17 +523,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
                       </p>
                     )}
                   </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Deskripsi
-                    </label>
-                    <textarea
-                      {...register("description")}
-                      rows="4"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Tambahkan deskripsi lokasi di sini..."></textarea>
-                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3 mt-6">
@@ -615,21 +579,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
                               </div>
 
                               <div className="flex items-start">
-                                <div className="bg-green-50 p-2 rounded-lg">
-                                  <MapPin className="h-5 w-5 text-green-500" />
-                                </div>
-                                <div className="ml-4">
-                                  <p className="text-sm font-medium text-gray-500">
-                                    Alamat
-                                  </p>
-                                  <p className="text-base font-medium text-gray-900">
-                                    {location.address ||
-                                      "Alamat tidak tersedia"}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-start">
                                 <div className="bg-purple-50 p-2 rounded-lg">
                                   <Navigation className="h-5 w-5 text-purple-500" />
                                 </div>
@@ -666,21 +615,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
                               )}
                             </div>
                           </div>
-
-                          {location.description && (
-                            <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                              <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                                <h4 className="font-semibold text-gray-800">
-                                  Deskripsi
-                                </h4>
-                              </div>
-                              <div className="p-5">
-                                <p className="text-gray-700 whitespace-pre-line">
-                                  {location.description}
-                                </p>
-                              </div>
-                            </div>
-                          )}
                         </div>
 
                         <div>
@@ -813,9 +747,6 @@ const LocationDetail = ({ locationId, onClose, onUpdate, onDelete }) => {
                                       <h3 className="font-bold text-gray-900">
                                         {location.name}
                                       </h3>
-                                      <p className="text-sm text-gray-600">
-                                        {location.address}
-                                      </p>
                                       <div className="mt-2 flex items-center text-xs text-blue-600">
                                         <Umbrella className="h-3 w-3 mr-1" />
                                         <span>
