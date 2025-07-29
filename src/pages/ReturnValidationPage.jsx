@@ -347,8 +347,8 @@ const ReturnValidationPage = () => {
                     Siap untuk mengembalikan?
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Klik tombol di bawah untuk mengonfirmasi bahwa Anda telah
-                    memasukkan payung ke loker.
+                    Klik tombol di bawah untuk mengonfirmasi bahwa anda akan
+                    mengembalikan payung.
                   </p>
                 </div>
 
@@ -558,9 +558,9 @@ const ReturnValidationPage = () => {
         {/* Help text */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
-            Butuh bantuan? Hubungi customer service kami di{" "}
-            <a href="tel:+6281234567890" className="text-blue-600 font-medium">
-              085885458934
+            Butuh bantuan?{" "}
+            <a href="#" className="text-blue-600 font-medium">
+              Hubungi customer service kami
             </a>
           </p>
         </div>

@@ -766,7 +766,8 @@ export default function TransactionPage() {
                         </div>
                       </div>
                       <p className="text-sm text-green-600 mt-4">
-                        Simpan kode ini dengan baik untuk mengambil payung Anda
+                        Simpan kode loker ini dengan baik untuk mengambil payung
+                        Anda
                       </p>
                     </div>
                   </div>

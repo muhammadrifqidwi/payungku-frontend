@@ -40,7 +40,7 @@ const faqData = [
   {
     question: "Apakah saya bisa meminjam lebih dari satu payung sekaligus?",
     answer:
-      "Tidak. Setiap akun hanya dapat memiliki **satu transaksi peminjaman aktif** dalam satu waktu. Setelah Anda mengembalikan payung sebelumnya, Anda bisa melakukan peminjaman kembali.",
+      "Tidak. Setiap akun dapat melakukan banyak peminjaman, namun tidak secara bersamaan dalam satu transaksi. Peminjaman berikutnya hanya dapat dilakukan setelah transaksi sebelumnya selesai, dan setiap transaksi harus diselesaikan atau dikembalikan satu per satu.",
   },
   {
     question:
