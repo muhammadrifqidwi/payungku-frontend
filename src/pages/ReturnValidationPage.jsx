@@ -65,6 +65,8 @@ const ReturnValidationPage = () => {
           ...res.data.transaction,
           token: token,
           user: res.data.user,
+          duration: res.data.duration,
+          code: res.data.transaction.rentCode,
         });
       } catch (err) {
         console.error("❌ Validasi gagal:", err);
@@ -297,7 +299,7 @@ const ReturnValidationPage = () => {
                   <div>
                     <p className="text-xs text-gray-500">Waktu Peminjaman</p>
                     <p className="text-sm font-medium">
-                      {formatDateTime(transaction.borrowTime)}
+                      {formatDateTime(transaction.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -307,7 +309,7 @@ const ReturnValidationPage = () => {
                   <div>
                     <p className="text-xs text-gray-500">Durasi Peminjaman</p>
                     <p className="text-sm font-medium">
-                      {transaction.duration || "0 jam"}
+                      {transaction.duration || "0 menit"}
                     </p>
                   </div>
                 </div>
